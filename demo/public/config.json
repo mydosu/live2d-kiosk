@@ -1,0 +1,24 @@
+{
+  "model": "Hiyori",
+  "showTime": true,
+  "showDate": true,
+  "showWeather": true,
+  "showBubble": true,
+  "city": "",
+  "weatherUnit": "c",
+  "zoom": 1.43,
+  "bubbleScrollSpeed": 20,
+  "bubblePlaceholder": "等待 agent 消息…",
+  "bubbleFontSize": 14,
+  "fontColors": { "time": "#ffffff", "date": "#9a9ab0", "weather": "#ffffff", "bubble": "#e8e8f2" },
+  "infoSource": "wifi",
+  "wsPort": 9000,
+  "layout": {
+    "time": { "x": 0, "y": 0, "scale": 1 },
+    "date": { "x": 0, "y": 0, "scale": 1 },
+    "weather": { "x": 0, "y": 0, "scale": 1 },
+    "bubble": { "x": 0, "y": 0, "scale": 1 },
+    "model": { "x": 0, "y": 0, "scale": 1 }
+  },
+  "models": ["Hiyori", "Haru", "Mao", "Mark", "Natori", "Ren", "Rice", "Wanko"]
+}

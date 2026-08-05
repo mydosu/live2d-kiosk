@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <link rel="icon" type="image/png" href="./favicon.png" />
+    <title>Live2D Kiosk Demo</title>
+    <style>
+      :root {
+        --accent: #7c5cff;
+        --accent-2: #ff5c8a;
+        --panel-bg: rgba(18, 18, 32, 0.82);
+        --panel-border: rgba(255, 255, 255, 0.12);
+        --text: #e8e8f2;
+        --text-dim: #9a9ab0;
+        --btn-bg: rgba(255, 255, 255, 0.07);
+        --btn-bg-hover: rgba(124, 92, 255, 0.28);
+        --btn-active: rgba(124, 92, 255, 0.45);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #101018;
+        font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+        color: var(--text);
+        user-select: none;
+      }
+
+      /* ---------- 背景 ---------- */
+      #bg {
+        position: fixed;
+        inset: 0;
+        background:
+          radial-gradient(ellipse at 20% 85%, rgba(124, 92, 255, 0.28), transparent 55%),
+          radial-gradient(ellipse at 82% 12%, rgba(255, 92, 138, 0.20), transparent 50%),
+          linear-gradient(160deg, #14142a 0%, #101018 55%, #0a0a14 100%);
+        z-index: 0;
+      }
+
+      /* ---------- Canvas ---------- */
+      /* 注意：不要设 width/height —— Pixi 根据 screen 尺寸自行设置 canvas 尺寸，
+         100vw/100vh 会把 canvas 撑到溢出窗口的 viewport（kiosk 无 WM 时窗口≠屏幕） */
+      #live2d {
+        position: fixed;
+        inset: 0;
+        display: block;
+        z-index: 1;
+        cursor: pointer;
+      }
+
+      /* ---------- 左侧面板：时间 / 天气 / 对话气泡 ---------- */
+      #side-panel {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 50%;
+        height: 100%;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 24px 20px;
+        gap: 20px;
+        pointer-events: none;
+      }
+      #time-display {
+        font-size: 46px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        text-shadow: 0 2px 14px rgba(0, 0, 0, 0.45);
+        font-variant-numeric: tabular-nums;
+      }
+      #date-display {
+        font-size: 15px;
+        color: var(--text-dim);
+        margin-top: 4px;
+        text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
+      }
+      #weather-display {
+        font-size: 16px;
+        color: var(--text);
+        text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
+        line-height: 1.5;
+      }
+      #chat-bubble {
+        background: rgba(24, 24, 42, 0.88);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 14px;
+        padding: 12px 14px;
+        font-size: 14px;
+        line-height: 1.55;
+        color: var(--text);
+        /* 宽度自适应内容，最长不超过左半屏；长文本换行 + 向下滚动 */
+        width: fit-content;
+        max-width: 100%;
+        min-width: 0; /* flex 子项允许收缩（否则 fit-content 会撑破 max-width） */
+        word-break: break-word;
+        overflow-wrap: break-word;
+        max-height: 40%;
+        overflow-y: auto;
+        scrollbar-width: none; /* 隐藏滚动条（kiosk 无鼠标，滚动条无意义） */
+        -ms-overflow-style: none;
+        /* 注意：不用 backdrop-filter blur —— Mali-G31 上每帧模糊代价大，拖累帧率 */
+        transition: opacity 0.4s ease;
+      }
+      #chat-bubble::-webkit-scrollbar {
+        display: none;
+      }
+      #chat-bubble.empty {
+        opacity: 0.45;
+        color: var(--text-dim);
+      }
+
+      /* ---------- 加载遮罩 ---------- */
+      #loader {
+        position: fixed;
+        inset: 0;
+        z-index: 40;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        background: rgba(12, 12, 22, 0.88);
+        backdrop-filter: blur(4px);
+        transition: opacity 0.35s ease;
+      }
+      #loader.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .spinner {
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        border: 3px solid rgba(255, 255, 255, 0.15);
+        border-top-color: var(--accent);
+        animation: spin 0.9s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      #loader-text {
+        font-size: 15px;
+        color: var(--text-dim);
+        letter-spacing: 1px;
+      }
+      #loader-error {
+        display: none;
+        max-width: 70vw;
+        text-align: center;
+        font-size: 13px;
+        color: #ff7a7a;
+        line-height: 1.6;
+        word-break: break-all;
+      }
+
+      /* ---------- 顶栏 ---------- */
+      #topbar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 16px;
+        background: linear-gradient(to bottom, rgba(10, 10, 20, 0.55), transparent);
+        pointer-events: none;
+        transition: opacity 0.3s ease, transform 0.3s ease;
+      }
+      #topbar.hide-hud {
+        opacity: 0;
+        transform: translateY(-8px);
+      }
+      #model-badge {
+        pointer-events: auto;
+        font-size: 14px;
+        font-weight: 600;
+        padding: 5px 14px;
+        border-radius: 999px;
+        background: var(--panel-bg);
+        border: 1px solid var(--panel-border);
+        backdrop-filter: blur(8px);
+        color: var(--text);
+      }
+      #status-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: #3ddc84;
+        box-shadow: 0 0 8px #3ddc84;
+      }
+      #status-dot.busy {
+        background: #ffb13d;
+        box-shadow: 0 0 8px #ffb13d;
+      }
+
+      /* ---------- 底部控制条 ---------- */
+      #controls {
+        position: fixed;
+        left: 50%;
+        bottom: 18px;
+        transform: translateX(-50%);
+        z-index: 30;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        border-radius: 16px;
+        background: var(--panel-bg);
+        border: 1px solid var(--panel-border);
+        backdrop-filter: blur(12px);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+        transition: opacity 0.3s ease, transform 0.3s ease;
+        max-width: calc(100vw - 24px);
+      }
+      #controls.hide-hud {
+        opacity: 0;
+        transform: translateX(-50%) translateY(12px);
+        pointer-events: none;
+      }
+      .icon-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        border: 1px solid transparent;
+        background: var(--btn-bg);
+        color: var(--text);
+        font-size: 17px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+        flex-shrink: 0;
+      }
+      .icon-btn:hover {
+        background: var(--btn-bg-hover);
+        transform: scale(1.06);
+      }
+      .icon-btn.on {
+        background: var(--btn-active);
+        border-color: rgba(124, 92, 255, 0.55);
+      }
+      .icon-btn:active {
+        transform: scale(0.94);
+      }
+      #btn-panel {
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        border: none;
+        color: #fff;
+        font-weight: 700;
+        font-size: 15px;
+      }
+      .sep {
+        width: 1px;
+        height: 26px;
+        background: var(--panel-border);
+        margin: 0 2px;
+        flex-shrink: 0;
+      }
+
+      /* ---------- 侧滑面板 ---------- */
+      #panel {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: min(340px, 88vw);
+        z-index: 50;
+        background: var(--panel-bg);
+        backdrop-filter: blur(16px);
+        border-left: 1px solid var(--panel-border);
+        box-shadow: -12px 0 40px rgba(0, 0, 0, 0.5);
+        transform: translateX(105%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      #panel.open {
+        transform: translateX(0);
+      }
+      #panel-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--panel-border);
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: 1px;
+      }
+      #panel-close {
+        width: 32px;
+        height: 32px;
+        border: none;
+        border-radius: 10px;
+        background: var(--btn-bg);
+        color: var(--text);
+        cursor: pointer;
+        font-size: 15px;
+      }
+      #panel-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 14px 16px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .group-label {
+        font-size: 12px;
+        color: var(--text-dim);
+        letter-spacing: 2px;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+      }
+      .btn-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+      }
+      .btn-grid .act-btn {
+        min-height: 40px;
+        font-size: 13px;
+      }
+      .act-btn {
+        border: 1px solid var(--panel-border);
+        border-radius: 12px;
+        background: var(--btn-bg);
+        color: var(--text);
+        padding: 9px 12px;
+        font-size: 13px;
+        cursor: pointer;
+        transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+        text-align: center;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .act-btn:hover {
+        background: var(--btn-bg-hover);
+        transform: scale(1.03);
+      }
+      .act-btn:active {
+        transform: scale(0.96);
+      }
+      .act-btn.active {
+        background: var(--btn-active);
+        border-color: rgba(124, 92, 255, 0.6);
+      }
+      .act-btn.wide {
+        grid-column: span 2;
+      }
+      .switch-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 2px;
+        font-size: 13px;
+        color: var(--text);
+      }
+      .switch {
+        position: relative;
+        width: 44px;
+        height: 24px;
+        flex-shrink: 0;
+      }
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      .switch .track {
+        position: absolute;
+        inset: 0;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.14);
+        transition: background 0.2s ease;
+        cursor: pointer;
+      }
+      .switch .track::after {
+        content: "";
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #fff;
+        transition: transform 0.2s ease;
+      }
+      .switch input:checked + .track {
+        background: var(--accent);
+      }
+      .switch input:checked + .track::after {
+        transform: translateX(20px);
+      }
+      #hint {
+        margin-top: 4px;
+        font-size: 11px;
+        color: var(--text-dim);
+        line-height: 1.7;
+      }
+
+      /* ---------- Toast ---------- */
+      #toast {
+        position: fixed;
+        left: 50%;
+        top: 68px;
+        transform: translateX(-50%) translateY(-8px);
+        z-index: 60;
+        padding: 8px 18px;
+        border-radius: 999px;
+        background: rgba(10, 10, 22, 0.85);
+        border: 1px solid var(--panel-border);
+        color: var(--text);
+        font-size: 13px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s ease, transform 0.25s ease;
+        backdrop-filter: blur(8px);
+        max-width: 80vw;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      #toast.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+      #toast.err {
+        border-color: rgba(255, 110, 110, 0.5);
+        color: #ff9c9c;
+      }
+
+      /* ---------- 滚动条 ---------- */
+      #panel-body::-webkit-scrollbar {
+        width: 6px;
+      }
+      #panel-body::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.18);
+        border-radius: 3px;
+      }
+      #panel-body::-webkit-scrollbar-track {
+        background: transparent;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="bg"></div>
+    <canvas id="live2d"></canvas>
+
+    <!-- 左侧面板：时间 / 天气 / 对话气泡（从上到下） -->
+    <div id="side-panel">
+      <div id="time-block">
+        <div id="time-display">--:--</div>
+        <div id="date-display"></div>
+      </div>
+      <div id="weather-display">--</div>
+      <div id="chat-bubble" class="empty">等待 agent 消息…</div>
+    </div>
+
+    <!-- 加载遮罩 -->
+    <div id="loader">
+      <div class="spinner"></div>
+      <div id="loader-text">加载模型中…</div>
+      <div id="loader-error"></div>
+    </div>
+
+    <!-- 顶栏 -->
+    <div id="topbar">
+      <div id="status-dot"></div>
+      <div id="model-badge">—</div>
+    </div>
+
+    <!-- 底部控制条 -->
+    <div id="controls">
+      <button class="icon-btn" id="btn-panel" title="控制面板">☰</button>
+      <div class="sep"></div>
+      <button class="icon-btn" id="btn-prev" title="上一个模型 (←)">◀</button>
+      <button class="icon-btn" id="btn-next" title="下一个模型 (→)">▶</button>
+      <div class="sep"></div>
+      <button class="icon-btn" id="btn-idle" title="播放待机动作 (空格)">▶</button>
+      <button class="icon-btn" id="btn-tap" title="TapBody 动作">👆</button>
+      <button class="icon-btn" id="btn-talk" title="说话（口型同步）">💬</button>
+      <div class="sep"></div>
+      <button class="icon-btn" id="btn-follow" title="鼠标跟随">🖱️</button>
+      <button class="icon-btn" id="btn-drag" title="拖拽">✋</button>
+      <div class="sep"></div>
+      <button class="icon-btn" id="btn-fullscreen" title="全屏 (F)">⛶</button>
+    </div>
+
+    <!-- 侧滑面板 -->
+    <div id="panel">
+      <div id="panel-head">
+        <span>控制面板</span>
+        <button id="panel-close">✕</button>
+      </div>
+      <div id="panel-body">
+        <div>
+          <div class="group-label">模型选择</div>
+          <div class="btn-grid" id="model-list"></div>
+        </div>
+        <div>
+          <div class="group-label">动作 Motion</div>
+          <div class="btn-grid" id="motion-list"></div>
+        </div>
+        <div>
+          <div class="group-label">表情 Expression</div>
+          <div class="btn-grid" id="expr-list"></div>
+        </div>
+        <div>
+          <div class="group-label">语音 Voice</div>
+          <div class="btn-grid" id="voice-list"></div>
+        </div>
+        <div>
+          <div class="group-label">开关</div>
+          <div class="switch-row">
+            <span>鼠标跟随</span>
+            <label class="switch"><input type="checkbox" id="sw-follow" checked /><span class="track"></span></label>
+          </div>
+          <div class="switch-row">
+            <span>拖拽模型</span>
+            <label class="switch"><input type="checkbox" id="sw-drag" /><span class="track"></span></label>
+          </div>
+          <div class="switch-row">
+            <span>自动待机动作</span>
+            <label class="switch"><input type="checkbox" id="sw-auto-idle" checked /><span class="track"></span></label>
+          </div>
+          <div class="switch-row">
+            <span>HUD 自动隐藏</span>
+            <label class="switch"><input type="checkbox" id="sw-auto-hide" checked /><span class="track"></span></label>
+          </div>
+        </div>
+        <div id="hint">
+          快捷键：←/→ 切换模型 · 空格 待机动作 · F 全屏 · H 显示/隐藏面板<br />
+          提示：点击模型身体会播放 Tap 动作，拖动模型可移动位置
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast"></div>
+
+    <!-- Live2D Cubism Core（必须先于业务代码加载） -->
+    <script src="./Core/live2dcubismcore.js"></script>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
