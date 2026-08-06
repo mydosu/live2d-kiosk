@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Live2D Kiosk 管理后台</title>
+<style>
+  :root { --accent:#ff6f9f; --accent-dark:#f44e86; --accent-soft:#ffe9f0; --bg:#fff8fa; --card:#ffffff; --text:#4a4a5a; --dim:#9d9db0; --border:#f5d9e3; color-scheme:light; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { color:var(--text); font-family:"Microsoft YaHei","PingFang SC","Noto Sans CJK SC","Source Han Sans SC",system-ui,sans-serif; min-height:100vh;
+    background:linear-gradient(135deg,#fff0f5 0%,#ffe4ef 45%,#f0e8ff 100%);
+    background-attachment:fixed; }
+  /* 背景装饰光斑图案 */
+  body::before { content:""; position:fixed; inset:0; z-index:-1; pointer-events:none;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(255,182,205,.45), transparent 42%),
+      radial-gradient(circle at 85% 25%, rgba(186,156,255,.35), transparent 45%),
+      radial-gradient(circle at 60% 85%, rgba(255,224,178,.4), transparent 38%),
+      radial-gradient(circle at 30% 75%, rgba(255,143,163,.18), transparent 30%);
+    filter:blur(2px); }
+  .app { display:flex; min-height:100vh; }
+
+  /* ---------- 左侧可伸缩边栏（毛玻璃） ---------- */
+  #sidebar { width:180px; background:rgba(255,255,255,.5); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); border-right:1px solid rgba(255,255,255,.75); padding:14px 10px; transition:width .25s; overflow:hidden; flex-shrink:0; display:flex; flex-direction:column; gap:8px; }
+  .app.collapsed #sidebar { width:48px; }
+  .side-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+  .side-title { font-size:13px; font-weight:700; color:var(--accent-dark); white-space:nowrap; }
+  .app.collapsed .side-title { display:none; }
+  #btn-collapse { border:none; background:linear-gradient(135deg,#ffb6cd,#ffd3e2); color:#b03a63; border-radius:8px; padding:4px 8px; cursor:pointer; font-size:12px; flex-shrink:0; }
+  .nav-item { display:flex; align-items:center; gap:8px; width:100%; padding:10px 12px; border:none; border-radius:10px; background:transparent; color:var(--text); cursor:pointer; font-size:14px; text-align:left; white-space:nowrap; transition:.2s; }
+  .nav-item:hover { background:rgba(255,111,159,.12); }
+  .nav-item.active { background:linear-gradient(135deg,#ff6f9f,#ff9fc4); color:#fff; font-weight:600; box-shadow:0 3px 10px rgba(255,111,159,.4); }
+  .app.collapsed .nav-item { justify-content:center; padding:10px 0; }
+  .app.collapsed .nav-item span:last-child { display:none; }
+
+  main { flex:1; padding:20px 24px; width:100%; }
+  h1 { font-size:22px; margin-bottom:6px; background:linear-gradient(90deg,#f44e86,#b06ef0); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+  .sub { color:var(--dim); font-size:13px; margin-bottom:16px; }
+  .page { display:none; }
+  .page.active { display:block; animation:fadeIn .25s; }
+  @keyframes fadeIn { from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
+
+  .card { background:rgba(255,255,255,.6); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border-radius:16px; padding:18px; margin-bottom:16px; border:1px solid rgba(255,255,255,.8); box-shadow:0 8px 32px rgba(255,111,159,.12); width:100%; }
+  .card h2 { font-size:15px; margin-bottom:12px; color:var(--accent-dark); display:flex; align-items:center; gap:6px; }
+  .card h2::after { content:""; flex:1; height:1px; background:linear-gradient(90deg,rgba(255,111,159,.35),transparent); margin-left:8px; }
+  .models { display:flex; flex-wrap:wrap; gap:8px; }
+  .model-btn { padding:8px 14px; border-radius:9px; border:1px solid var(--border); background:#fff; color:var(--text); cursor:pointer; font-size:13px; }
+  .model-btn.active { background:linear-gradient(135deg,#ff6f9f,#ff9fc4); border-color:transparent; color:#fff; font-weight:600; box-shadow:0 2px 8px rgba(255,111,159,.35); }
+  .model-btn:hover { filter:brightness(1.04); }
+  .row { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid rgba(253,238,243,.9); font-size:14px; gap:10px; flex-wrap:wrap; }
+  .row:last-child { border-bottom:none; }
+  input[type=text] { background:rgba(255,255,255,.85); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:7px 10px; font-size:13px; width:170px; }
+  input[type=number] { background:rgba(255,255,255,.85); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:6px 8px; font-size:13px; width:62px; text-align:center; }
+  input[type=password] { background:rgba(255,255,255,.85); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:7px 10px; font-size:13px; }
+  select { background:rgba(255,255,255,.85); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:7px 10px; font-size:13px; }
+  .switch { position:relative; width:46px; height:26px; flex-shrink:0; }
+  .switch input { opacity:0; width:0; height:0; }
+  .slider { position:absolute; inset:0; border-radius:13px; background:#f0d6e0; transition:.25s; cursor:pointer; }
+  .slider::before { content:""; position:absolute; width:20px; height:20px; left:3px; top:3px; border-radius:50%; background:#fff; transition:.25s; box-shadow:0 1px 3px rgba(0,0,0,.15); }
+  .switch input:checked + .slider { background:linear-gradient(135deg,#ff6f9f,#ff9fc4); }
+  .switch input:checked + .slider::before { transform:translateX(20px); }
+
+  /* ---------- 界面排版：网格对齐 ---------- */
+  .layout-row { display:grid; grid-template-columns:64px 1fr; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid rgba(253,238,243,.9); }
+  .layout-row:last-child { border-bottom:none; }
+  .lname { font-size:14px; font-weight:600; color:var(--text); white-space:nowrap; }
+  .axes { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; align-items:center; }
+  .axes span { display:flex; align-items:center; gap:5px; font-size:12px; color:var(--dim); min-width:0; }
+  .axes span > label { flex-shrink:0; font-weight:700; color:var(--accent-dark); width:12px; }
+  .axes input[type=range] { flex:1; min-width:50px; }
+  .axes input[type=number] { width:58px; flex-shrink:0; }
+  .axes b { color:var(--accent-dark); min-width:26px; text-align:center; font-size:11px; flex-shrink:0; }
+
+  /* 滑条统一粉色清新样式（浅色轨道 + 粉色滑块，避免跟随系统深色主题变黑） */
+  input[type=range] { -webkit-appearance:none; appearance:none; height:6px; border-radius:3px; background:#f0d6e0; outline:none; cursor:pointer; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:18px; height:18px; border-radius:50%; background:linear-gradient(135deg,#ff6f9f,#ff9fc4); cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,.2); }
+  input[type=range]::-moz-range-thumb { width:18px; height:18px; border:none; border-radius:50%; background:var(--accent); cursor:pointer; }
+  .upload { display:flex; flex-direction:column; gap:10px; }
+  .upload input[type=file] { font-size:13px; color:var(--dim); }
+  .btn { padding:10px 18px; border-radius:10px; border:none; cursor:pointer; font-size:14px; transition:.2s; }
+  .btn-primary { background:linear-gradient(135deg,#ff6f9f,#ff9fc4); color:#fff; box-shadow:0 3px 10px rgba(255,111,159,.35); }
+  .btn-danger { background:linear-gradient(135deg,#e5484d,#f0716e); color:#fff; }
+  .btn:hover { filter:brightness(1.07); transform:translateY(-1px); }
+  .btn:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+  .btn-save.dirty { background:linear-gradient(135deg,#ffb13d,#ffcf7a) !important; }
+  .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:rgba(255,255,255,.85); backdrop-filter:blur(12px); color:var(--text); border:1px solid var(--border); box-shadow:0 8px 24px rgba(255,111,159,.25); padding:10px 18px; border-radius:12px; font-size:13px; opacity:0; transition:.3s; pointer-events:none; z-index:99; }
+  .toast.show { opacity:1; }
+  .hidden { display:none; }
+  .bottom-btns { display:flex; flex-direction:column; gap:10px; margin-top:16px; }
+  @media (max-width:720px) { .layout-row { grid-template-columns:1fr; } .axes { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <aside id="sidebar">
+    <div class="side-top"><span class="side-title">🎛️ 控制台</span><button id="btn-collapse">◀</button></div>
+    <button class="nav-item active" data-page="models"><span>🤖</span><span>模型管理</span></button>
+    <button class="nav-item" data-page="source"><span>🌐</span><span>网络与信息</span></button>
+    <button class="nav-item" data-page="display"><span>🖥️</span><span>显示设置</span></button>
+    <button class="nav-item" data-page="layout"><span>📐</span><span>界面排版</span></button>
+    <button class="nav-item" data-page="agent"><span>🤝</span><span>智能助手</span></button>
+  </aside>
+
+  <main>
+    <h1>🎛️ Live2D 桌面助手控制台</h1>
+    <div class="sub">通过 USB 线连接电脑后即可访问 · 设备页面 <b id="dev-addr">http://192.168.30.1/</b></div>
+
+    <!-- 页面：模型管理 -->
+    <div class="page active" id="page-models">
+      <div class="card">
+        <h2>🤖 模型管理</h2>
+        <div class="models" id="model-list">加载中…</div>
+        <div class="upload" style="margin-top:14px">
+          <input type="file" id="file" accept=".zip" />
+          <button class="btn btn-primary" id="btn-upload" disabled>上传模型</button>
+          <div class="sub" id="upload-hint" style="margin:0">选择模型压缩包（zip 格式）上传，即可在屏幕上展示新角色</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 页面：信息获取 -->
+    <div class="page" id="page-source">
+      <div class="card">
+        <h2>🌐 网络与信息</h2>
+        <div class="row"><span>连接 WiFi 获取信息（天气、时间等）</span><label class="switch"><input type="radio" name="src" id="src-wifi" /><span class="slider"></span></label></div>
+        <div class="row"><span>USB 连接电脑（由电脑提供时间、天气、位置）</span><label class="switch"><input type="radio" name="src" id="src-rndis" /><span class="slider"></span></label></div>
+        <div class="sub" style="margin:6px 0 0">USB 模式：连接电脑后，电脑端软件会自动推送时间、天气和位置信息到屏幕</div>
+        <div id="wifi-box" style="margin-top:10px">
+          <div class="sub" style="margin:0 0 8px">📶 WiFi 连接（本机没有网线接口，请使用 WiFi 连接网络）</div>
+          <div class="row" style="flex-wrap:wrap"><span style="font-size:13px">状态：<b id="wifi-status">未知</b></span>
+            <button class="btn btn-primary" id="btn-scan" style="padding:6px 12px;font-size:12px">扫描</button>
+            <button class="btn" id="btn-wifi-disconnect" style="padding:6px 12px;font-size:12px;background:#e8e8f0;color:#4a4a5a">断开</button>
+          </div>
+          <select id="sel-wifi" style="width:100%;margin:8px 0"></select>
+          <div style="display:flex;gap:8px">
+            <input type="password" id="inp-wifi-pass" placeholder="WiFi 密码（开放网络留空）" style="flex:1" />
+            <button class="btn btn-primary" id="btn-wifi-connect" style="padding:6px 12px;font-size:12px">连接</button>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-save" data-card="src" style="margin-top:12px">💾 保存设置</button>
+      </div>
+    </div>
+
+    <!-- 页面：显示设置 -->
+    <div class="page" id="page-display">
+      <div class="card">
+        <h2>🖥️ 显示设置</h2>
+        <div class="row"><span>显示时间</span><label class="switch"><input type="checkbox" id="sw-time" /><span class="slider"></span></label></div>
+        <div class="row"><span>显示日期/星期</span><label class="switch"><input type="checkbox" id="sw-date" /><span class="slider"></span></label></div>
+        <div class="row"><span>显示天气</span><label class="switch"><input type="checkbox" id="sw-weather" /><span class="slider"></span></label></div>
+        <div class="row"><span>显示对话气泡</span><label class="switch"><input type="checkbox" id="sw-bubble" /><span class="slider"></span></label></div>
+        <div class="row"><span>气泡空闲时显示的文字</span><input type="text" id="inp-placeholder" placeholder="等待 agent 消息…" /></div>
+        <div class="row"><span>气泡滚动速度 <b id="speed-val" style="color:var(--accent)">20px/s</b></span>
+          <div class="axes"><span><input type="range" id="rng-speed" min="5" max="100" step="5" style="width:130px" /><input type="number" id="num-speed" min="5" max="100" step="5" /></span></div>
+        </div>
+        <div class="row"><span>气泡字体大小 <b id="fontsize-val" style="color:var(--accent)">14px</b></span>
+          <div class="axes"><span><input type="range" id="rng-fontsize" min="10" max="24" step="1" style="width:130px" /><input type="number" id="num-fontsize" min="10" max="24" step="1" /></span></div>
+        </div>
+        <div class="row" style="justify-content:flex-start;gap:14px"><span style="margin-right:auto">字体颜色</span>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)">⏰<input type="color" id="col-time" value="#ffffff" style="width:34px;height:26px;border:none;padding:0;background:none;cursor:pointer" /></label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)">📅<input type="color" id="col-date" value="#9a9ab0" style="width:34px;height:26px;border:none;padding:0;background:none;cursor:pointer" /></label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)">🌤<input type="color" id="col-weather" value="#ffffff" style="width:34px;height:26px;border:none;padding:0;background:none;cursor:pointer" /></label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)">💬<input type="color" id="col-bubble" value="#e8e8f2" style="width:34px;height:26px;border:none;padding:0;background:none;cursor:pointer" /></label>
+        </div>
+        <div class="sub" style="margin:0">提示：消息较长时气泡会自动循环滚动展示</div>
+        <div class="row"><span>城市（留空 = 自动定位）</span><input type="text" id="inp-city" placeholder="如：上海" /></div>
+        <div class="row"><span>温度单位</span>
+          <select id="sel-unit"><option value="c">°C</option><option value="f">°F</option></select>
+        </div>
+        <button class="btn btn-primary btn-save" data-card="display" style="margin-top:12px">💾 保存设置</button>
+      </div>
+    </div>
+
+    <!-- 页面：界面排版 -->
+    <div class="page" id="page-layout">
+      <div class="card">
+        <h2>📐 界面排版（位置与大小）</h2>
+        <div class="sub" style="margin:0 0 8px">拖动滑条或直接输入数值，自由调整各模块的位置与大小</div>
+        <div class="layout-row"><span class="lname">⏰ 时间</span><div class="axes"><span><label>X</label><input type="range" id="lay-time-x" min="-320" max="320" step="5" /><input type="number" id="lay-time-xn" min="-320" max="320" step="5" /><b id="lay-time-xv">0</b></span><span><label>Y</label><input type="range" id="lay-time-y" min="-240" max="240" step="5" /><input type="number" id="lay-time-yn" min="-240" max="240" step="5" /><b id="lay-time-yv">0</b></span><span><label>S</label><input type="range" id="lay-time-s" min="0.5" max="3" step="0.05" /><input type="number" id="lay-time-sn" min="0.5" max="3" step="0.05" /><b id="lay-time-sv">1</b></span></div></div>
+        <div class="layout-row"><span class="lname">📅 日期</span><div class="axes"><span><label>X</label><input type="range" id="lay-date-x" min="-320" max="320" step="5" /><input type="number" id="lay-date-xn" min="-320" max="320" step="5" /><b id="lay-date-xv">0</b></span><span><label>Y</label><input type="range" id="lay-date-y" min="-240" max="240" step="5" /><input type="number" id="lay-date-yn" min="-240" max="240" step="5" /><b id="lay-date-yv">0</b></span><span><label>S</label><input type="range" id="lay-date-s" min="0.5" max="3" step="0.05" /><input type="number" id="lay-date-sn" min="0.5" max="3" step="0.05" /><b id="lay-date-sv">1</b></span></div></div>
+        <div class="layout-row"><span class="lname">🌤 天气</span><div class="axes"><span><label>X</label><input type="range" id="lay-weather-x" min="-320" max="320" step="5" /><input type="number" id="lay-weather-xn" min="-320" max="320" step="5" /><b id="lay-weather-xv">0</b></span><span><label>Y</label><input type="range" id="lay-weather-y" min="-240" max="240" step="5" /><input type="number" id="lay-weather-yn" min="-240" max="240" step="5" /><b id="lay-weather-yv">0</b></span><span><label>S</label><input type="range" id="lay-weather-s" min="0.5" max="3" step="0.05" /><input type="number" id="lay-weather-sn" min="0.5" max="3" step="0.05" /><b id="lay-weather-sv">1</b></span></div></div>
+        <div class="layout-row"><span class="lname">💬 气泡</span><div class="axes"><span><label>X</label><input type="range" id="lay-bubble-x" min="-320" max="320" step="5" /><input type="number" id="lay-bubble-xn" min="-320" max="320" step="5" /><b id="lay-bubble-xv">0</b></span><span><label>Y</label><input type="range" id="lay-bubble-y" min="-240" max="240" step="5" /><input type="number" id="lay-bubble-yn" min="-240" max="240" step="5" /><b id="lay-bubble-yv">0</b></span><span><label>S</label><input type="range" id="lay-bubble-s" min="0.5" max="3" step="0.05" /><input type="number" id="lay-bubble-sn" min="0.5" max="3" step="0.05" /><b id="lay-bubble-sv">1</b></span></div></div>
+        <div class="layout-row"><span class="lname">🧍 模型</span><div class="axes"><span><label>X</label><input type="range" id="lay-model-x" min="-320" max="320" step="5" /><input type="number" id="lay-model-xn" min="-320" max="320" step="5" /><b id="lay-model-xv">0</b></span><span><label>Y</label><input type="range" id="lay-model-y" min="-240" max="240" step="5" /><input type="number" id="lay-model-yn" min="-240" max="240" step="5" /><b id="lay-model-yv">0</b></span><span><label>S</label><input type="range" id="lay-model-s" min="0.5" max="3" step="0.05" /><input type="number" id="lay-model-sn" min="0.5" max="3" step="0.05" /><b id="lay-model-sv">1</b></span></div></div>
+        <div class="sub" style="margin:8px 0 0">💡 调整 S 滑条可以改变角色的大小</div>
+        <button class="btn btn-primary btn-save" data-card="layout" style="margin-top:12px">💾 保存设置</button>
+      </div>
+    </div>
+
+    <!-- 页面：智能助手 -->
+    <div class="page" id="page-agent">
+      <div class="card">
+        <h2>🤝 智能助手连接</h2>
+        <div class="sub" style="margin:0 0 10px">连接智能助手（如各类 AI 聊天机器人）后，助手可以控制屏幕上的角色——做表情、做动作、说话，就像真正的桌面伙伴一样。</div>
+        <div class="row"><span>连接端口 <b id="wsport-val" style="color:var(--accent)">9000</b></span>
+          <input type="number" id="inp-wsport" min="1" max="65535" />
+        </div>
+        <div class="sub" style="margin:6px 0 0">实时通道：<b id="ws-addr">ws://192.168.30.1:9000/ws</b></div>
+        <div class="sub" style="margin:4px 0 0">⚠️ 修改端口后需<b>重启设备</b>才能生效</div>
+        <div class="sub" style="margin:8px 0 0">助手可以发送三类指令：<b>表情</b>（如开心、难过）、<b>动作</b>（如挥手、点头）、<b>说话</b>（显示文字气泡）</div>
+        <div class="sub" style="margin:8px 0 0">详细对接方法请参考说明书中的《智能助手对接指南》</div>
+        <div style="margin-top:10px"><button class="btn btn-primary" id="btn-test">发送测试消息</button></div>
+        <button class="btn btn-primary btn-save" data-card="agent" style="margin-top:8px">💾 保存设置</button>
+      </div>
+      <div class="bottom-btns">
+        <button class="btn btn-danger" id="btn-reset" style="background:#ff8fa3">🔄 恢复默认设置</button>
+        <button class="btn btn-danger" id="btn-reboot" style="background:#6ab0ff">🔄 重启设备</button>
+        <button class="btn btn-danger" id="btn-poweroff">⏻ 关闭设备</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = location.origin;
+let config = {};
+let models = [];
+let draft = {};
+
+// 设备访问地址动态显示（跟随当前网段）
+const $ = (id) => document.getElementById(id);
+if (typeof document !== 'undefined') {
+  const da = document.getElementById('dev-addr');
+  if (da) da.textContent = 'http://' + location.hostname + '/';
+}
+function toast(msg) {
+  const t = $('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ---------- 侧边栏：页面切换 + 伸缩 ----------
+document.querySelectorAll('.nav-item').forEach((b) => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('.nav-item').forEach((x) => x.classList.remove('active'));
+    document.querySelectorAll('.page').forEach((x) => x.classList.remove('active'));
+    b.classList.add('active');
+    $('page-' + b.dataset.page).classList.add('active');
+  });
+});
+$('btn-collapse').addEventListener('click', () => {
+  $('app').classList.toggle('collapsed');
+  $('btn-collapse').textContent = $('app').classList.contains('collapsed') ? '▶' : '◀';
+});
+
+// ---------- 保存按钮机制（改控件只更新草稿，点保存才生效） ----------
+function markDirty(card) {
+  const b = document.querySelector('.btn-save[data-card="' + card + '"]');
+  if (b && !b.classList.contains('dirty')) {
+    b.classList.add('dirty');
+    b.textContent = b.textContent.replace('💾', '⚠️');
+  }
+}
+function clearDirty(card) {
+  const b = document.querySelector('.btn-save[data-card="' + card + '"]');
+  if (b) { b.classList.remove('dirty'); b.textContent = b.textContent.replace('⚠️', '💾'); }
+}
+async function saveCard(card, fields) {
+  const body = {};
+  fields.forEach(f => body[f] = draft[f] !== undefined ? draft[f] : config[f]);
+  await fetch(API + '/api/config', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+  Object.assign(config, body);
+  clearDirty(card);
+  toast('已保存，屏幕将立即更新');
+}
+document.querySelectorAll('.btn-save').forEach(b => {
+  b.addEventListener('click', () => {
+    const card = b.dataset.card;
+    if (card === 'src') saveCard('src', ['infoSource']);
+    else if (card === 'display') saveCard('display', ['showTime','showDate','showWeather','showBubble','bubblePlaceholder','bubbleScrollSpeed','bubbleFontSize','fontColors','city','weatherUnit']);
+    else if (card === 'layout') saveCard('layout', ['layout']);
+    else if (card === 'agent') saveCard('agent', ['wsPort']);
+  });
+});
+
+async function load() {
+  const [cfg, m] = await Promise.all([
+    fetch(API + '/api/config').then(r => r.json()),
+    fetch(API + '/api/models').then(r => r.json()),
+  ]);
+  config = cfg; models = m.models || [];
+  render();
+}
+
+function render() {
+  // 模型按钮
+  const box = $('model-list');
+  box.innerHTML = '';
+  models.forEach(name => {
+    const b = document.createElement('button');
+    b.className = 'model-btn' + (name === config.model ? ' active' : '');
+    b.textContent = name;
+    b.onclick = () => selectModel(name);
+    box.appendChild(b);
+  });
+  if (!models.length) box.textContent = '暂无模型，请上传 zip';
+  // 开关
+  $('sw-time').checked = !!config.showTime;
+  $('sw-date').checked = !!config.showDate;
+  $('sw-weather').checked = !!config.showWeather;
+  $('sw-bubble').checked = !!config.showBubble;
+  $('inp-city').value = config.city || '';
+  $('sel-unit').value = config.weatherUnit || 'c';
+  $('inp-placeholder').value = config.bubblePlaceholder || '等待 agent 消息…';
+  $('rng-speed').value = config.bubbleScrollSpeed || 20;
+  $('num-speed').value = config.bubbleScrollSpeed || 20;
+  $('speed-val').textContent = (config.bubbleScrollSpeed || 20) + 'px/s';
+  $('rng-fontsize').value = config.bubbleFontSize || 14;
+  $('num-fontsize').value = config.bubbleFontSize || 14;
+  $('fontsize-val').textContent = (config.bubbleFontSize || 14) + 'px';
+  const fc = config.fontColors || {};
+  $('col-time').value = fc.time || '#ffffff';
+  $('col-date').value = fc.date || '#9a9ab0';
+  $('col-weather').value = fc.weather || '#ffffff';
+  $('col-bubble').value = fc.bubble || '#e8e8f2';
+  // 信息源
+  const src = config.infoSource || 'wifi';
+  $('src-wifi').checked = src === 'wifi';
+  $('src-rndis').checked = src === 'rndis';
+  $('wifi-box').style.display = src === 'wifi' ? '' : 'none';
+  if (src === 'wifi') refreshWifiStatus();
+  $('inp-wsport').value = config.wsPort || 9000;
+  $('wsport-val').textContent = config.wsPort || 9000;
+  $('ws-addr').textContent = 'ws://' + location.hostname + ':' + (config.wsPort || 9000) + '/ws';
+  // 布局滑条（含数值输入）
+  const lay = config.layout || {};
+  ['time','date','weather','bubble','model'].forEach(m => {
+    const v = lay[m] || {x:0, y:0, scale:1};
+    ['x','y'].forEach(axis => {
+      $('lay-' + m + '-' + axis).value = v[axis] || 0;
+      $('lay-' + m + '-' + axis + 'n').value = v[axis] || 0;
+      $('lay-' + m + '-' + axis + 'v').textContent = v[axis] || 0;
+    });
+    if ($('lay-' + m + '-s')) {
+      $('lay-' + m + '-s').value = v.scale || 1;
+      $('lay-' + m + '-sn').value = (v.scale || 1).toFixed(2);
+      $('lay-' + m + '-sv').textContent = (v.scale || 1).toFixed(2);
+    }
+  });
+  // 清除未保存标记
+  document.querySelectorAll('.btn-save').forEach(b => b.classList.remove('dirty'));
+}
+
+async function selectModel(name) {
+  const r = await fetch(API + '/api/model', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({model: name}),
+  });
+  const d = await r.json();
+  if (d.error) return toast(d.error);
+  config.model = name; render();
+  toast('已切换角色：' + name + '（稍后显示）');
+}
+
+// ---------- 显示设置控件（草稿） ----------
+['sw-time','sw-date','sw-weather','sw-bubble'].forEach(id => {
+  $(id).addEventListener('change', (e) => {
+    draft[id === 'sw-time' ? 'showTime' : id === 'sw-date' ? 'showDate' : id === 'sw-weather' ? 'showWeather' : 'showBubble'] = e.target.checked;
+    markDirty('display');
+  });
+});
+$('inp-city').addEventListener('change', (e) => {
+  draft.city = e.target.value.trim();
+  markDirty('display');
+});
+$('sel-unit').addEventListener('change', (e) => {
+  draft.weatherUnit = e.target.value;
+  markDirty('display');
+});
+$('inp-placeholder').addEventListener('change', (e) => {
+  draft.bubblePlaceholder = e.target.value.trim() || '等待 agent 消息…';
+  markDirty('display');
+});
+// 速度滑条 + 数值输入联动
+function bindPair(sliderId, numId, onVal) {
+  const sl = $(sliderId), num = $(numId);
+  sl.addEventListener('input', () => { num.value = sl.value; onVal(parseFloat(sl.value)); });
+  num.addEventListener('change', () => {
+    let v = parseFloat(num.value);
+    if (isNaN(v)) { num.value = sl.value; return; }
+    v = Math.min(parseFloat(sl.max), Math.max(parseFloat(sl.min), v));
+    num.value = v; sl.value = v; onVal(v);
+  });
+}
+bindPair('rng-speed', 'num-speed', (v) => {
+  $('speed-val').textContent = v + 'px/s';
+  draft.bubbleScrollSpeed = v;
+  markDirty('display');
+});
+// 气泡字体大小（滑条+数值联动）
+bindPair('rng-fontsize', 'num-fontsize', (v) => {
+  $('fontsize-val').textContent = v + 'px';
+  draft.bubbleFontSize = v;
+  markDirty('display');
+});
+// 字体颜色
+['time','date','weather','bubble'].forEach((k) => {
+  $('col-' + k).addEventListener('input', (e) => {
+    draft.fontColors = { ...(draft.fontColors || config.fontColors || {}), [k]: e.target.value };
+    markDirty('display');
+  });
+});
+
+// ---------- WebSocket 端口 ----------
+$('inp-wsport').addEventListener('change', (e) => {
+  const port = parseInt(e.target.value, 10);
+  if (!port || port < 1 || port > 65535) { toast('端口无效'); e.target.value = config.wsPort || 9000; return; }
+  draft.wsPort = port;
+  $('wsport-val').textContent = port;
+  $('ws-addr').textContent = 'ws://' + location.hostname + ':' + port + '/ws';
+  markDirty('agent');
+});
+
+// ---------- 信息获取方式 ----------
+['src-wifi','src-rndis'].forEach(id => {
+  $(id).addEventListener('change', (e) => {
+    if (!e.target.checked) return;
+    const src = id === 'src-wifi' ? 'wifi' : 'rndis';
+    $('wifi-box').style.display = src === 'wifi' ? '' : 'none';
+    draft.infoSource = src;
+    markDirty('src');
+    if (src === 'wifi') refreshWifiStatus();
+    toast(src === 'wifi' ? '已切换到 WiFi 模式' : '已切换到 USB 电脑模式');
+  });
+});
+
+// ---------- WiFi 管理 ----------
+async function refreshWifiStatus() {
+  try {
+    const r = await fetch(API + '/api/wifi/status').then(x => x.json());
+    $('wifi-status').textContent = r.connected ? ('已连接 ' + (r.ssid || '') + (r.ip ? ' (' + r.ip + ')' : '')) : '未连接';
+  } catch { $('wifi-status').textContent = '状态获取失败'; }
+}
+$('btn-scan').addEventListener('click', async () => {
+  $('btn-scan').disabled = true;
+  toast('正在扫描 WiFi…');
+  try {
+    const r = await fetch(API + '/api/wifi/scan').then(x => x.json());
+    const sel = $('sel-wifi');
+    sel.innerHTML = '';
+    if (r.error || !r.networks || !r.networks.length) {
+      sel.innerHTML = '<option>未发现 WiFi 网络</option>';
+    } else {
+      r.networks.forEach(n => {
+        const o = document.createElement('option');
+        o.value = n.ssid;
+        o.textContent = `${n.ssid}  ${n.signal}dBm${n.secure ? ' 🔒' : ' 开放'}`;
+        sel.appendChild(o);
+      });
+      toast('发现 ' + r.networks.length + ' 个网络');
+    }
+  } catch { toast('扫描失败'); }
+  $('btn-scan').disabled = false;
+});
+$('btn-wifi-connect').addEventListener('click', async () => {
+  const ssid = $('sel-wifi').value;
+  if (!ssid || ssid === '未发现 WiFi 网络') return toast('请先扫描并选择 WiFi');
+  const password = $('inp-wifi-pass').value;
+  $('btn-wifi-connect').disabled = true;
+  toast('正在连接 ' + ssid + '…');
+  try {
+    const r = await fetch(API + '/api/wifi/connect', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ssid, password})}).then(x => x.json());
+    if (r.error) return toast(r.error);
+    toast(r.msg);
+    setTimeout(refreshWifiStatus, 8000);
+  } catch { toast('连接失败'); }
+  $('btn-wifi-connect').disabled = false;
+});
+$('btn-wifi-disconnect').addEventListener('click', async () => {
+  await fetch(API + '/api/wifi/disconnect', {method:'POST'});
+  toast('WiFi 已断开');
+  refreshWifiStatus();
+});
+
+// ---------- 布局滑条（滑条+数值输入联动，草稿模式） ----------
+function collectLayout() {
+  const lay = {};
+  ['time','date','weather','bubble','model'].forEach(mm => {
+    const o = { x: parseInt($('lay-' + mm + '-x').value, 10), y: parseInt($('lay-' + mm + '-y').value, 10) };
+    if ($('lay-' + mm + '-s')) o.scale = parseFloat($('lay-' + mm + '-s').value);
+    lay[mm] = o;
+  });
+  return lay;
+}
+function bindLayout() {
+  ['time','date','weather','bubble','model'].forEach(m => {
+    ['x','y'].forEach(axis => {
+      const sl = $('lay-' + m + '-' + axis);
+      const num = $('lay-' + m + '-' + axis + 'n');
+      const upd = (v) => {
+        $('lay-' + m + '-' + axis + 'v').textContent = v;
+        draft.layout = collectLayout();
+        markDirty('layout');
+      };
+      sl.addEventListener('input', () => { num.value = sl.value; upd(sl.value); });
+      num.addEventListener('change', () => {
+        let v = parseInt(num.value, 10);
+        if (isNaN(v)) { num.value = sl.value; return; }
+        v = Math.min(320, Math.max(-320, v));
+        num.value = v; sl.value = v; upd(v);
+      });
+    });
+    if ($('lay-' + m + '-s')) {
+      const sl = $('lay-' + m + '-s');
+      const num = $('lay-' + m + '-sn');
+      const upd = (v) => {
+        $('lay-' + m + '-sv').textContent = parseFloat(v).toFixed(2);
+        draft.layout = collectLayout();
+        markDirty('layout');
+      };
+      sl.addEventListener('input', () => { num.value = sl.value; upd(sl.value); });
+      num.addEventListener('change', () => {
+        let v = parseFloat(num.value);
+        if (isNaN(v)) { num.value = sl.value; return; }
+        v = Math.min(3, Math.max(0.5, v));
+        num.value = v; sl.value = v; upd(v);
+      });
+    }
+  });
+}
+bindLayout();
+
+$('file').addEventListener('change', () => { $('btn-upload').disabled = !$('file').files.length; });
+$('btn-upload').addEventListener('click', async () => {
+  const f = $('file').files[0];
+  if (!f) return;
+  const fd = new FormData();
+  fd.append('file', f);
+  $('btn-upload').disabled = true;
+  const r = await fetch(API + '/api/upload', {method:'POST', body: fd});
+  const d = await r.json();
+  $('btn-upload').disabled = false;
+  if (d.error) return toast(d.error);
+  toast('上传成功：' + (d.uploaded || []).join(', '));
+  models = d.models || []; render();
+  $('file').value = '';
+});
+
+$('btn-test').addEventListener('click', async () => {
+  await fetch(API + '/api/send', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({type:'speak', text:'你好！这是一条测试消息'})});
+  toast('测试消息已发送');
+});
+
+$('btn-poweroff').addEventListener('click', async () => {
+  if (!confirm('确认关机？')) return;
+  $('btn-poweroff').disabled = true;
+  await fetch(API + '/api/poweroff', {method:'POST'});
+  toast('正在关机…');
+});
+
+// ---------- 重启设备 ----------
+$('btn-reboot').addEventListener('click', async () => {
+  if (!confirm('确认重启设备？')) return;
+  $('btn-reboot').disabled = true;
+  await fetch(API + '/api/reboot', {method:'POST'});
+  toast('正在重启…');
+});
+
+// ---------- 重置所有设置 ----------
+$('btn-reset').addEventListener('click', async () => {
+  if (!confirm('确定将所有设置重置为默认值？（模型/显示/排版/信息源/端口）')) return;
+  const r = await fetch(API + '/api/config/reset', {method:'POST'}).then(x => x.json());
+  if (r.ok) {
+    draft = {};
+    await load();
+    toast('已恢复默认设置');
+  } else {
+    toast('重置失败');
+  }
+});
+
+load();
+</script>
+</body>
+</html>
