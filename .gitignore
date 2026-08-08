@@ -1,0 +1,18 @@
+# 依赖与构建
+node_modules/
+dist/
+
+# 本地归档/诊断
+archive/
+*.png
+*.log
+
+# Live2D 官方 SDK（本地参考，需自行从 Live2D 官网下载）
+CubismSdkForWeb-5-r.5/
+
+# 环境变量（含 SSH 密码等敏感信息）
+.env
+
+# 系统
+.DS_Store
+Thumbs.db
