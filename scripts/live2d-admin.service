@@ -1,0 +1,16 @@
+[Unit]
+Description=Live2D Kiosk Admin (Flask :8080 + WebSocket :9000)
+After=network.target
+Wants=live2d-web.service
+
+[Service]
+Type=simple
+User=myduso
+Group=myduso
+WorkingDirectory=/opt/dashboard/admin
+ExecStart=/usr/bin/python3 /opt/dashboard/admin/app.py
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
