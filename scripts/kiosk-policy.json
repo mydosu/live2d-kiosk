@@ -1,0 +1,11 @@
+{
+  "TranslateEnabled": false,
+  "LensRegionSearchEnabled": false,
+  "PasswordManagerEnabled": false,
+  "AutofillCreditCardEnabled": false,
+  "DefaultBrowserSettingEnabled": false,
+  "PromptForDownloadLocation": false,
+  "DownloadRestrictions": 3,
+  "BlockThirdPartyCookies": true,
+  "HomepageLocation": "http://localhost/"
+}

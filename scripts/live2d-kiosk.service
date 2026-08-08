@@ -1,0 +1,20 @@
+[Unit]
+Description=Live2D Kiosk (Xorg + Chromium)
+After=network.target
+Wants=live2d-web.service
+
+[Service]
+Type=simple
+# Xorg 需 root 打开 VT；Chromium 在 kiosk.sh 内以 myduso 运行
+Environment=HOME=/root
+WorkingDirectory=/opt/dashboard
+ExecStart=/usr/bin/xinit /opt/dashboard/kiosk.sh -- /usr/bin/Xorg :0 -nolisten tcp -noreset vt1
+# Chromium(kiosk 全屏 + keepalive 挂起 evaluate) 不响应 SIGTERM，
+# 默认等 90s 才 SIGKILL → sudo reboot 卡在命令行。10s 后强制杀掉。
+TimeoutStopSec=10
+KillMode=control-group
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
