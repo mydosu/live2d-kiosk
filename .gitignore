@@ -16,3 +16,6 @@ CubismSdkForWeb-5-r.5/
 # 系统
 .DS_Store
 Thumbs.db
+
+# Edge headless 测试临时 profile
+demo/.edge-verify-profile/
