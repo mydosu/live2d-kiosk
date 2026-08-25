@@ -23,11 +23,12 @@ xset -dpms 2>/dev/null
 xset s off 2>/dev/null
 xset s noblank 2>/dev/null
 
-# CPU 调频策略：不再强制最高频（performance 发热严重，改回内核默认 schedutil）
-# schedutil 按需升频，日常负载下频率自动回落，温度明显下降
-# 注意：不要加 --renderer-process-limit/--disable-software-rasterizer 等激进 flags
+# CPU 调频策略：恢复 performance（固定最高频，稳定优先）
+# 教训1：schedutil 频繁调频触发 H616 CCU 时钟驱动 bug（内核 Oops: ccu_div_set_rate，
+# Comm: sugov:0）→ 板子开久了崩溃/自动重启。performance 不切频，无此问题。
+# 教训2：不要加 --renderer-process-limit/--disable-software-rasterizer 等激进 Chromium flags
 #（实测 --renderer-process-limit=1 导致渲染进程内存暴涨 → 系统 OOM 卡死）
-echo schedutil > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null
+echo performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null
 sleep 0.5
 
 # 启动极轻量窗口管理器 openbox —— 无 WM 时 Chromium 无法真正全屏到屏幕尺寸
