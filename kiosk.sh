@@ -25,6 +25,8 @@ xset s noblank 2>/dev/null
 
 # CPU 调频策略：不再强制最高频（performance 发热严重，改回内核默认 schedutil）
 # schedutil 按需升频，日常负载下频率自动回落，温度明显下降
+# 注意：不要加 --renderer-process-limit/--disable-software-rasterizer 等激进 flags
+#（实测 --renderer-process-limit=1 导致渲染进程内存暴涨 → 系统 OOM 卡死）
 echo schedutil > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null
 sleep 0.5
 
@@ -87,7 +89,6 @@ exec dbus-run-session -- /usr/bin/chromium \
   --no-sandbox \
   --remote-debugging-port=9222 \
   --start-fullscreen \
-  --renderer-process-limit=1 --disk-cache-size=0 --disable-software-rasterizer --disable-dev-shm-usage \
   --window-size=480,640 \
   --window-position=0,0 \
   --check-for-update-interval=31536000 \
