@@ -1,0 +1,12 @@
+# metadata.yaml
+name: live2d-kiosk
+desc: 控制 Live2D 桌面终端（伪全息小屏幕）：表情 / 动作 / 对话气泡 / 状态查询
+short_desc: 把 astrbot 接到你的 Live2D 小屏幕终端上
+version: 1.0.0
+author: mydosu
+repo: https://github.com/mydosu/live2d-kiosk
+astrbot_version: ">=4.16"
+config:
+  board_url: http://192.168.30.1:8080
+  auto_emotion: true
+  speak_user_msg: true
