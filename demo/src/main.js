@@ -522,7 +522,7 @@ async function loadModelByName(name, { silent = false } = {}) {
       let __fpsLast = performance.now()
       const __fpsLoop = (now) => {
         __fpsFrames++
-        if (now - __fpsLast >= 10000) {
+        if (now - __fpsLast >= 60000) {  // 60s 报一次（省 SD 卡写入），排障时可临时改回 10s
           const fps = (__fpsFrames * 1000) / (now - __fpsLast)
           console.log(`[FPS] ${fps.toFixed(1)} vis=${document.visibilityState} focus=${document.hasFocus()} inner=${window.innerWidth}x${window.innerHeight}`)
           __fpsFrames = 0
