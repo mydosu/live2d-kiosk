@@ -40,19 +40,21 @@
   .page.active { display:block; animation:fadeIn .25s; }
   @keyframes fadeIn { from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
 
-  .card { background:rgba(255,255,255,.6); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border-radius:16px; padding:18px; margin-bottom:16px; border:1px solid rgba(255,255,255,.8); box-shadow:0 8px 32px rgba(255,111,159,.12); width:100%; }
+  .card { background:rgba(255,255,255,.68); backdrop-filter:blur(22px); -webkit-backdrop-filter:blur(22px); border-radius:22px; padding:20px; margin-bottom:16px; border:1px solid rgba(255,255,255,.85); box-shadow:0 10px 40px rgba(255,111,159,.1), 0 2px 8px rgba(255,111,159,.06); width:100%; transition:box-shadow .3s, transform .3s; }
+  .card:hover { box-shadow:0 14px 48px rgba(255,111,159,.16), 0 4px 12px rgba(255,111,159,.08); }
   .card h2 { font-size:15px; margin-bottom:12px; color:var(--accent-dark); display:flex; align-items:center; gap:6px; }
   .card h2::after { content:""; flex:1; height:1px; background:linear-gradient(90deg,rgba(255,111,159,.35),transparent); margin-left:8px; }
   .models { display:flex; flex-wrap:wrap; gap:8px; }
-  .model-btn { padding:8px 14px; border-radius:9px; border:1px solid var(--border); background:#fff; color:var(--text); cursor:pointer; font-size:13px; }
-  .model-btn.active { background:linear-gradient(135deg,#ff6f9f,#ff9fc4); border-color:transparent; color:#fff; font-weight:600; box-shadow:0 2px 8px rgba(255,111,159,.35); }
-  .model-btn:hover { filter:brightness(1.04); }
-  .row { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid rgba(253,238,243,.9); font-size:14px; gap:10px; flex-wrap:wrap; }
+  .model-btn { padding:8px 14px; border-radius:12px; border:1px solid var(--border); background:#fff; color:var(--text); cursor:pointer; font-size:13px; transition:.18s; }
+  .model-btn.active { background:linear-gradient(135deg,#ff6f9f,#ff9fc4); border-color:transparent; color:#fff; font-weight:600; box-shadow:0 4px 14px rgba(255,111,159,.4); transform:translateY(-1px); }
+  .model-btn:hover { filter:brightness(1.04); transform:translateY(-1px); box-shadow:0 4px 12px rgba(255,111,159,.18); }
+  .row { display:flex; align-items:center; justify-content:space-between; padding:11px 8px; border-bottom:1px solid rgba(253,238,243,.9); font-size:14px; gap:10px; flex-wrap:wrap; border-radius:10px; transition:background .2s; }
+  .row:hover { background:rgba(255,240,246,.6); }
   .row:last-child { border-bottom:none; }
-  input[type=text] { background:rgba(255,255,255,.85); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:7px 10px; font-size:13px; width:170px; }
-  input[type=number] { background:rgba(255,255,255,.85); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:6px 8px; font-size:13px; width:62px; text-align:center; }
-  input[type=password] { background:rgba(255,255,255,.85); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:7px 10px; font-size:13px; }
-  select { background:rgba(255,255,255,.85); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:7px 10px; font-size:13px; }
+  input[type=text], input[type=number], input[type=password], select { background:rgba(255,255,255,.9); border:1px solid var(--border); color:var(--text); border-radius:11px; padding:8px 11px; font-size:13px; transition:border-color .2s, box-shadow .2s; }
+  input[type=text]:focus, input[type=number]:focus, input[type=password]:focus, select:focus { outline:none; border-color:#ff8fb5; box-shadow:0 0 0 3px rgba(255,111,159,.16); }
+  input[type=text] { width:170px; }
+  input[type=number] { width:62px; text-align:center; }
   .switch { position:relative; width:46px; height:26px; flex-shrink:0; }
   .switch input { opacity:0; width:0; height:0; }
   .slider { position:absolute; inset:0; border-radius:13px; background:#f0d6e0; transition:.25s; cursor:pointer; }
@@ -72,16 +74,18 @@
   .axes b { color:var(--accent-dark); min-width:26px; text-align:center; font-size:11px; flex-shrink:0; }
 
   /* 滑条统一粉色清新样式（浅色轨道 + 粉色滑块，避免跟随系统深色主题变黑） */
-  input[type=range] { -webkit-appearance:none; appearance:none; height:6px; border-radius:3px; background:#f0d6e0; outline:none; cursor:pointer; }
-  input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:18px; height:18px; border-radius:50%; background:linear-gradient(135deg,#ff6f9f,#ff9fc4); cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,.2); }
-  input[type=range]::-moz-range-thumb { width:18px; height:18px; border:none; border-radius:50%; background:var(--accent); cursor:pointer; }
+  input[type=range] { -webkit-appearance:none; appearance:none; height:6px; border-radius:3px; background:linear-gradient(90deg,#f3d8e2,#fbe9ef); outline:none; cursor:pointer; transition:background .2s; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:19px; height:19px; border-radius:50%; background:linear-gradient(135deg,#ff6f9f,#ff9fc4); cursor:pointer; box-shadow:0 2px 6px rgba(255,111,159,.45); transition:transform .18s, box-shadow .18s; }
+  input[type=range]::-webkit-slider-thumb:hover { transform:scale(1.15); box-shadow:0 3px 10px rgba(255,111,159,.55); }
+  input[type=range]::-moz-range-thumb { width:19px; height:19px; border:none; border-radius:50%; background:var(--accent); cursor:pointer; box-shadow:0 2px 6px rgba(255,111,159,.45); }
   .upload { display:flex; flex-direction:column; gap:10px; }
   .upload input[type=file] { font-size:13px; color:var(--dim); }
-  .btn { padding:10px 18px; border-radius:10px; border:none; cursor:pointer; font-size:14px; transition:.2s; }
-  .btn-primary { background:linear-gradient(135deg,#ff6f9f,#ff9fc4); color:#fff; box-shadow:0 3px 10px rgba(255,111,159,.35); }
+  .btn { padding:10px 18px; border-radius:12px; border:none; cursor:pointer; font-size:14px; transition:.2s; }
+  .btn-primary { background:linear-gradient(135deg,#ff6f9f,#ff9fc4); color:#fff; box-shadow:0 4px 14px rgba(255,111,159,.35); }
   .btn-danger { background:linear-gradient(135deg,#e5484d,#f0716e); color:#fff; }
-  .btn:hover { filter:brightness(1.07); transform:translateY(-1px); }
-  .btn:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+  .btn:hover { filter:brightness(1.07); transform:translateY(-1px); box-shadow:0 6px 18px rgba(255,111,159,.3); }
+  .btn:active { transform:scale(.97); }
+  .btn:disabled { opacity:.5; cursor:not-allowed; transform:none; box-shadow:none; }
   .btn-save.dirty { background:linear-gradient(135deg,#ffb13d,#ffcf7a) !important; }
   .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:rgba(255,255,255,.85); backdrop-filter:blur(12px); color:var(--text); border:1px solid var(--border); box-shadow:0 8px 24px rgba(255,111,159,.25); padding:10px 18px; border-radius:12px; font-size:13px; opacity:0; transition:.3s; pointer-events:none; z-index:99; }
   .toast.show { opacity:1; }
@@ -95,22 +99,22 @@
 <body>
 <div class="app" id="app">
   <aside id="sidebar">
-    <div class="side-top"><span class="side-title">🎛️ 控制台</span><button id="btn-collapse">◀</button></div>
-    <button class="nav-item active" data-page="models"><span>🤖</span><span>模型管理</span></button>
-    <button class="nav-item" data-page="source"><span>🌐</span><span>网络与信息</span></button>
-    <button class="nav-item" data-page="display"><span>🖥️</span><span>显示设置</span></button>
-    <button class="nav-item" data-page="layout"><span>📐</span><span>界面排版</span></button>
-    <button class="nav-item" data-page="agent"><span>🤝</span><span>智能助手</span></button>
+    <div class="side-top"><span class="side-title">控制台</span><button id="btn-collapse">◀</button></div>
+    <button class="nav-item active" data-page="models"><span></span><span>模型管理</span></button>
+    <button class="nav-item" data-page="source"><span></span><span>网络与信息</span></button>
+    <button class="nav-item" data-page="display"><span></span><span>显示设置</span></button>
+    <button class="nav-item" data-page="layout"><span></span><span>界面排版</span></button>
+    <button class="nav-item" data-page="agent"><span></span><span>智能助手</span></button>
   </aside>
 
   <main>
-    <h1>🎛️ Live2D 桌面助手控制台</h1>
+    <h1>Live2D 桌面助手控制台</h1>
     <div class="sub">通过 USB 线连接电脑后即可访问 · 设备页面 <b id="dev-addr">http://192.168.30.1/</b></div>
 
     <!-- 页面：模型管理 -->
     <div class="page active" id="page-models">
       <div class="card">
-        <h2>🤖 模型管理</h2>
+        <h2>模型管理</h2>
         <div class="models" id="model-list">加载中…</div>
         <div class="upload" style="margin-top:14px">
           <input type="file" id="file" accept=".zip" />
@@ -123,12 +127,12 @@
     <!-- 页面：信息获取 -->
     <div class="page" id="page-source">
       <div class="card">
-        <h2>🌐 网络与信息</h2>
+        <h2>网络与信息</h2>
         <div class="row"><span>连接 WiFi 获取信息（天气、时间等）</span><label class="switch"><input type="radio" name="src" id="src-wifi" /><span class="slider"></span></label></div>
         <div class="row"><span>USB 连接电脑（由电脑提供时间、天气、位置）</span><label class="switch"><input type="radio" name="src" id="src-rndis" /><span class="slider"></span></label></div>
         <div class="sub" style="margin:6px 0 0">USB 模式：连接电脑后，电脑端软件会自动推送时间、天气和位置信息到屏幕</div>
         <div id="wifi-box" style="margin-top:10px">
-          <div class="sub" style="margin:0 0 8px">📶 WiFi 连接（本机没有网线接口，请使用 WiFi 连接网络）</div>
+          <div class="sub" style="margin:0 0 8px">WiFi 连接（本机没有网线接口，请使用 WiFi 连接网络）</div>
           <div class="row" style="flex-wrap:wrap"><span style="font-size:13px">状态：<b id="wifi-status">未知</b></span>
             <button class="btn btn-primary" id="btn-scan" style="padding:6px 12px;font-size:12px">扫描</button>
             <button class="btn" id="btn-wifi-disconnect" style="padding:6px 12px;font-size:12px;background:#e8e8f0;color:#4a4a5a">断开</button>
@@ -139,14 +143,14 @@
             <button class="btn btn-primary" id="btn-wifi-connect" style="padding:6px 12px;font-size:12px">连接</button>
           </div>
         </div>
-        <button class="btn btn-primary btn-save" data-card="src" style="margin-top:12px">💾 保存设置</button>
+        <button class="btn btn-primary btn-save" data-card="src" style="margin-top:12px">保存设置</button>
       </div>
     </div>
 
     <!-- 页面：显示设置 -->
     <div class="page" id="page-display">
       <div class="card">
-        <h2>🖥️ 显示设置</h2>
+        <h2>显示设置</h2>
         <div class="row"><span>显示时间</span><label class="switch"><input type="checkbox" id="sw-time" /><span class="slider"></span></label></div>
         <div class="row"><span>显示日期/星期</span><label class="switch"><input type="checkbox" id="sw-date" /><span class="slider"></span></label></div>
         <div class="row"><span>显示天气</span><label class="switch"><input type="checkbox" id="sw-weather" /><span class="slider"></span></label></div>
@@ -163,50 +167,50 @@
         </div>
         <div class="sub" style="margin:2px 0 0">0 = 一直显示，直到下一条消息替换</div>
         <div class="row" style="justify-content:flex-start;gap:14px"><span style="margin-right:auto">字体颜色</span>
-          <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)">⏰<input type="color" id="col-time" value="#ffffff" style="width:34px;height:26px;border:none;padding:0;background:none;cursor:pointer" /></label>
-          <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)">📅<input type="color" id="col-date" value="#9a9ab0" style="width:34px;height:26px;border:none;padding:0;background:none;cursor:pointer" /></label>
-          <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)">🌤<input type="color" id="col-weather" value="#ffffff" style="width:34px;height:26px;border:none;padding:0;background:none;cursor:pointer" /></label>
-          <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)">💬<input type="color" id="col-bubble" value="#e8e8f2" style="width:34px;height:26px;border:none;padding:0;background:none;cursor:pointer" /></label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)"><input type="color" id="col-time" value="#ffffff" style="width:34px;height:26px;border:none;padding:0;background:none;cursor:pointer" /></label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)"><input type="color" id="col-date" value="#9a9ab0" style="width:34px;height:26px;border:none;padding:0;background:none;cursor:pointer" /></label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)"><input type="color" id="col-weather" value="#ffffff" style="width:34px;height:26px;border:none;padding:0;background:none;cursor:pointer" /></label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)"><input type="color" id="col-bubble" value="#e8e8f2" style="width:34px;height:26px;border:none;padding:0;background:none;cursor:pointer" /></label>
         </div>
         <div class="sub" style="margin:0">提示：消息较长时气泡会自动循环滚动展示</div>
         <div class="row"><span>城市（留空 = 自动定位）</span><input type="text" id="inp-city" placeholder="如：上海" /></div>
         <div class="row"><span>温度单位</span>
           <select id="sel-unit"><option value="c">°C</option><option value="f">°F</option></select>
         </div>
-        <button class="btn btn-primary btn-save" data-card="display" style="margin-top:12px">💾 保存设置</button>
+        <button class="btn btn-primary btn-save" data-card="display" style="margin-top:12px">保存设置</button>
       </div>
     </div>
 
     <!-- 页面：界面排版 -->
     <div class="page" id="page-layout">
       <div class="card">
-        <h2>📐 界面排版（位置与大小）</h2>
+        <h2>界面排版（位置与大小）</h2>
         <div class="sub" style="margin:0 0 8px">拖动滑条或直接输入数值，自由调整各模块的位置与大小</div>
-        <div class="layout-row"><span class="lname">⏰ 时间</span><div class="axes"><span><label>X</label><input type="range" id="lay-time-x" min="-320" max="320" step="5" /><input type="number" id="lay-time-xn" min="-320" max="320" step="5" /><b id="lay-time-xv">0</b></span><span><label>Y</label><input type="range" id="lay-time-y" min="-240" max="240" step="5" /><input type="number" id="lay-time-yn" min="-240" max="240" step="5" /><b id="lay-time-yv">0</b></span><span><label>S</label><input type="range" id="lay-time-s" min="0.5" max="3" step="0.05" /><input type="number" id="lay-time-sn" min="0.5" max="3" step="0.05" /><b id="lay-time-sv">1</b></span></div></div>
-        <div class="layout-row"><span class="lname">📅 日期</span><div class="axes"><span><label>X</label><input type="range" id="lay-date-x" min="-320" max="320" step="5" /><input type="number" id="lay-date-xn" min="-320" max="320" step="5" /><b id="lay-date-xv">0</b></span><span><label>Y</label><input type="range" id="lay-date-y" min="-240" max="240" step="5" /><input type="number" id="lay-date-yn" min="-240" max="240" step="5" /><b id="lay-date-yv">0</b></span><span><label>S</label><input type="range" id="lay-date-s" min="0.5" max="3" step="0.05" /><input type="number" id="lay-date-sn" min="0.5" max="3" step="0.05" /><b id="lay-date-sv">1</b></span></div></div>
-        <div class="layout-row"><span class="lname">🌤 天气</span><div class="axes"><span><label>X</label><input type="range" id="lay-weather-x" min="-320" max="320" step="5" /><input type="number" id="lay-weather-xn" min="-320" max="320" step="5" /><b id="lay-weather-xv">0</b></span><span><label>Y</label><input type="range" id="lay-weather-y" min="-240" max="240" step="5" /><input type="number" id="lay-weather-yn" min="-240" max="240" step="5" /><b id="lay-weather-yv">0</b></span><span><label>S</label><input type="range" id="lay-weather-s" min="0.5" max="3" step="0.05" /><input type="number" id="lay-weather-sn" min="0.5" max="3" step="0.05" /><b id="lay-weather-sv">1</b></span></div></div>
-        <div class="layout-row"><span class="lname">💬 气泡</span><div class="axes"><span><label>X</label><input type="range" id="lay-bubble-x" min="-320" max="320" step="5" /><input type="number" id="lay-bubble-xn" min="-320" max="320" step="5" /><b id="lay-bubble-xv">0</b></span><span><label>Y</label><input type="range" id="lay-bubble-y" min="-240" max="240" step="5" /><input type="number" id="lay-bubble-yn" min="-240" max="240" step="5" /><b id="lay-bubble-yv">0</b></span><span><label>S</label><input type="range" id="lay-bubble-s" min="0.5" max="3" step="0.05" /><input type="number" id="lay-bubble-sn" min="0.5" max="3" step="0.05" /><b id="lay-bubble-sv">1</b></span></div></div>
-        <div class="layout-row"><span class="lname">🧍 模型</span><div class="axes"><span><label>X</label><input type="range" id="lay-model-x" min="-320" max="320" step="5" /><input type="number" id="lay-model-xn" min="-320" max="320" step="5" /><b id="lay-model-xv">0</b></span><span><label>Y</label><input type="range" id="lay-model-y" min="-240" max="240" step="5" /><input type="number" id="lay-model-yn" min="-240" max="240" step="5" /><b id="lay-model-yv">0</b></span><span><label>S</label><input type="range" id="lay-model-s" min="0.5" max="3" step="0.05" /><input type="number" id="lay-model-sn" min="0.5" max="3" step="0.05" /><b id="lay-model-sv">1</b></span></div></div>
-        <div class="sub" style="margin:8px 0 0">💡 调整 S 滑条可以改变角色的大小</div>
-        <button class="btn btn-primary btn-save" data-card="layout" style="margin-top:12px">💾 保存设置</button>
+        <div class="layout-row"><span class="lname">时间</span><div class="axes"><span><label>X</label><input type="range" id="lay-time-x" min="-320" max="320" step="5" /><input type="number" id="lay-time-xn" min="-320" max="320" step="5" /><b id="lay-time-xv">0</b></span><span><label>Y</label><input type="range" id="lay-time-y" min="-240" max="240" step="5" /><input type="number" id="lay-time-yn" min="-240" max="240" step="5" /><b id="lay-time-yv">0</b></span><span><label>S</label><input type="range" id="lay-time-s" min="0.5" max="3" step="0.05" /><input type="number" id="lay-time-sn" min="0.5" max="3" step="0.05" /><b id="lay-time-sv">1</b></span></div></div>
+        <div class="layout-row"><span class="lname">日期</span><div class="axes"><span><label>X</label><input type="range" id="lay-date-x" min="-320" max="320" step="5" /><input type="number" id="lay-date-xn" min="-320" max="320" step="5" /><b id="lay-date-xv">0</b></span><span><label>Y</label><input type="range" id="lay-date-y" min="-240" max="240" step="5" /><input type="number" id="lay-date-yn" min="-240" max="240" step="5" /><b id="lay-date-yv">0</b></span><span><label>S</label><input type="range" id="lay-date-s" min="0.5" max="3" step="0.05" /><input type="number" id="lay-date-sn" min="0.5" max="3" step="0.05" /><b id="lay-date-sv">1</b></span></div></div>
+        <div class="layout-row"><span class="lname">天气</span><div class="axes"><span><label>X</label><input type="range" id="lay-weather-x" min="-320" max="320" step="5" /><input type="number" id="lay-weather-xn" min="-320" max="320" step="5" /><b id="lay-weather-xv">0</b></span><span><label>Y</label><input type="range" id="lay-weather-y" min="-240" max="240" step="5" /><input type="number" id="lay-weather-yn" min="-240" max="240" step="5" /><b id="lay-weather-yv">0</b></span><span><label>S</label><input type="range" id="lay-weather-s" min="0.5" max="3" step="0.05" /><input type="number" id="lay-weather-sn" min="0.5" max="3" step="0.05" /><b id="lay-weather-sv">1</b></span></div></div>
+        <div class="layout-row"><span class="lname">气泡</span><div class="axes"><span><label>X</label><input type="range" id="lay-bubble-x" min="-320" max="320" step="5" /><input type="number" id="lay-bubble-xn" min="-320" max="320" step="5" /><b id="lay-bubble-xv">0</b></span><span><label>Y</label><input type="range" id="lay-bubble-y" min="-240" max="240" step="5" /><input type="number" id="lay-bubble-yn" min="-240" max="240" step="5" /><b id="lay-bubble-yv">0</b></span><span><label>S</label><input type="range" id="lay-bubble-s" min="0.5" max="3" step="0.05" /><input type="number" id="lay-bubble-sn" min="0.5" max="3" step="0.05" /><b id="lay-bubble-sv">1</b></span></div></div>
+        <div class="layout-row"><span class="lname">模型</span><div class="axes"><span><label>X</label><input type="range" id="lay-model-x" min="-320" max="320" step="5" /><input type="number" id="lay-model-xn" min="-320" max="320" step="5" /><b id="lay-model-xv">0</b></span><span><label>Y</label><input type="range" id="lay-model-y" min="-240" max="240" step="5" /><input type="number" id="lay-model-yn" min="-240" max="240" step="5" /><b id="lay-model-yv">0</b></span><span><label>S</label><input type="range" id="lay-model-s" min="0.5" max="3" step="0.05" /><input type="number" id="lay-model-sn" min="0.5" max="3" step="0.05" /><b id="lay-model-sv">1</b></span></div></div>
+        <div class="sub" style="margin:8px 0 0">调整 S 滑条可以改变角色的大小</div>
+        <button class="btn btn-primary btn-save" data-card="layout" style="margin-top:12px">保存设置</button>
       </div>
     </div>
 
     <!-- 页面：智能助手 -->
     <div class="page" id="page-agent">
       <div class="card">
-        <h2>🤝 智能助手连接</h2>
+        <h2>智能助手连接</h2>
         <div class="sub" style="margin:0 0 10px">连接智能助手（如各类 AI 聊天机器人）后，助手可以控制屏幕上的角色——做表情、做动作、说话，就像真正的桌面伙伴一样。</div>
         <div class="row" style="margin-top:12px"><span>AstrBot 地址</span><input type="text" id="inp-astrbot-url" placeholder="http://192.168.5.6:6185 或 https://你的域名" /></div>
         <div class="row"><span>AstrBot API Key</span><input type="password" id="inp-astrbot-key" placeholder="粘贴 API Key（AstrBot 设置 → API Key 创建）" /></div>
-        <div class="sub" style="margin:6px 0 0">屏幕会主动连接 AstrBot 拉取消息（表情/动作/对话气泡），无需开放板子端口。API Key 在 AstrBot WebUI「设置 → API Key」创建，勾选 <b>plugin / chat / file</b> 三个权限</div>
+        <div class="sub" style="margin:6px 0 0">屏幕会主动连接 AstrBot 拉取消息（表情/动作/对话气泡），无需开放板子端口。API Key 在 AstrBot WebUI「设置 → API Key」创建，勾选 <b>plugin / chat / file</b>三个权限</div>
         <div class="row" style="margin-top:12px"><span>显示会话</span>
           <select id="sel-session" style="flex:1;min-width:0"><option value="">全部会话</option></select>
-          <button class="btn" id="btn-refresh-sessions" style="padding:3px 10px" title="刷新会话列表">🔄</button>
+          <button class="btn" id="btn-refresh-sessions" style="padding:3px 10px" title="刷新会话列表"></button>
         </div>
-        <div class="sub" style="margin:4px 0 0">选择后屏幕只显示该会话的消息（私聊/群聊分开显示，互不混杂）。先保存地址和 API Key 再点 🔄 刷新</div>
+        <div class="sub" style="margin:4px 0 0">选择后屏幕只显示该会话的消息（私聊/群聊分开显示，互不混杂）。先保存地址和 API Key 再点  刷新</div>
         <div style="margin-top:12px;display:flex;gap:10px;align-items:center">
-          <button class="btn btn-primary" id="btn-test-astrbot" style="padding:6px 16px">🔌 测试连接</button>
+          <button class="btn btn-primary" id="btn-test-astrbot" style="padding:6px 16px">测试连接</button>
           <span id="astrbot-test-result" style="font-size:13px"></span>
         </div>
         <div class="sub" style="margin:8px 0 0">屏幕连接状态：<b id="shell-status" style="color:var(--accent)">检测中…</b></div>
@@ -214,13 +218,13 @@
         <div class="sub" style="margin:8px 0 0">详细对接方法请参考说明书中的《智能助手对接指南》</div>
         <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap">
           <button class="btn btn-primary" id="btn-test">发送测试消息</button>
-          <button class="btn" id="btn-clear-msg" style="padding:6px 16px">🧹 清空屏幕消息</button>
+          <button class="btn" id="btn-clear-msg" style="padding:6px 16px">清空屏幕消息</button>
         </div>
-        <button class="btn btn-primary btn-save" data-card="agent" style="margin-top:8px">💾 保存设置</button>
+        <button class="btn btn-primary btn-save" data-card="agent" style="margin-top:8px">保存设置</button>
       </div>
       <div class="bottom-btns">
-        <button class="btn btn-danger" id="btn-reset" style="background:#ff8fa3">🔄 恢复默认设置</button>
-        <button class="btn btn-danger" id="btn-reboot" style="background:#6ab0ff">🔄 重启设备</button>
+        <button class="btn btn-danger" id="btn-reset" style="background:#ff8fa3">恢复默认设置</button>
+        <button class="btn btn-danger" id="btn-reboot" style="background:#6ab0ff">重启设备</button>
         <button class="btn btn-danger" id="btn-poweroff">⏻ 关闭设备</button>
       </div>
     </div>
@@ -267,12 +271,12 @@ function markDirty(card) {
   const b = document.querySelector('.btn-save[data-card="' + card + '"]');
   if (b && !b.classList.contains('dirty')) {
     b.classList.add('dirty');
-    b.textContent = b.textContent.replace('💾', '⚠️');
+    b.textContent = b.textContent.replace('', '⚠');
   }
 }
 function clearDirty(card) {
   const b = document.querySelector('.btn-save[data-card="' + card + '"]');
-  if (b) { b.classList.remove('dirty'); b.textContent = b.textContent.replace('⚠️', '💾'); }
+  if (b) { b.classList.remove('dirty'); b.textContent = b.textContent.replace('⚠', ''); }
 }
 async function saveCard(card, fields) {
   const body = {};
@@ -560,7 +564,7 @@ async function refreshSessions(silent) {
   } catch (e) {
     if (!silent) toast('拉取会话失败：' + e.message);
   } finally {
-    btn.textContent = '🔄';
+    btn.textContent = '';
   }
 }
 $('btn-refresh-sessions').addEventListener('click', refreshSessions);
@@ -598,11 +602,11 @@ async function refreshShellStatus() {
       el.textContent = '✅ 已连接 AstrBot · 最近拉取 ' + ago + 's 前' + (d.count ? ' · 最近显示 ' + d.count + ' 条' : '');
       el.style.color = 'var(--accent)';
     } else {
-      el.textContent = '⚠️ ' + (d.error || '连接异常');
+      el.textContent = '⚠ ' + (d.error || '连接异常');
       el.style.color = '#e0a050';
     }
   } catch (e) {
-    el.textContent = '⚠️ 状态读取失败';
+    el.textContent = '⚠ 状态读取失败';
     el.style.color = '#e0a050';
   }
 }
