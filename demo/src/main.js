@@ -299,8 +299,22 @@ const FONT_STYLES = {
   serif: `'Playfair Display', 'ZCOOL XiaoWei', 'Noto Sans CJK SC', Georgia, serif`,
   cnround: `'ZCOOL KuaiLe', 'Noto Sans CJK SC', 'Microsoft YaHei', system-ui, sans-serif`, // 中文圆体（全中文）
 }
-function applyFont() {
+let fontApplySeq = 0 // 防竞态：快速切换字体时只应用最新一次
+async function applyFont() {
+  const seq = ++fontApplySeq
   const fs = CONFIG.fontStyles || {}
+  // 预加载所需字体（等就绪再切换——保持旧字体直到新字体 ready，避免闪现/空白）
+  const needed = new Set()
+  Object.values(fs).forEach(k => {
+    const fam = (FONT_STYLES[k] || FONT_STYLES.default).split(',')[0].replace(/['"]/g, '').trim()
+    if (fam && fam !== 'Noto Sans CJK SC') needed.add(fam)
+  })
+  if (needed.size) {
+    try {
+      await Promise.all([...needed].map(f => document.fonts.load(`16px "${f}"`)))
+    } catch (e) { /* 字体加载失败则用 fallback */ }
+  }
+  if (seq !== fontApplySeq) return // 已有更新的切换请求，丢弃本次
   const pick = (k) => FONT_STYLES[fs[k]] || FONT_STYLES.default
   document.body.style.fontFamily = pick('time')
   if (timeDisplay) timeDisplay.style.fontFamily = pick('time')

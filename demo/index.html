@@ -40,12 +40,12 @@
       @font-face {
         font-family: 'ZCOOL KuaiLe';
         src: url('/fonts/zcool-kuaile-cn.woff2') format('woff2');
-        font-display: swap;
+        font-display: block; /* block：字体就绪前不显示 fallback（避免切换闪现）；JS 已做预加载，无空白感 */
       }
       @font-face {
         font-family: 'ZCOOL XiaoWei';
         src: url('/fonts/zcool-xiaowei-cn.woff2') format('woff2');
-        font-display: swap;
+        font-display: block;
       }
 
       /* ---------- 背景 ---------- */
