@@ -156,6 +156,10 @@
         <div class="row"><span>气泡字体大小 <b id="fontsize-val" style="color:var(--accent)">14px</b></span>
           <div class="axes"><span><input type="range" id="rng-fontsize" min="10" max="24" step="1" style="width:130px" /><input type="number" id="num-fontsize" min="10" max="24" step="1" /></span></div>
         </div>
+        <div class="row"><span>气泡滞留秒数 <b id="hold-val" style="color:var(--accent)">0s（一直）</b></span>
+          <div class="axes"><span><input type="range" id="rng-hold" min="0" max="300" step="5" style="width:130px" /><input type="number" id="num-hold" min="0" max="300" step="5" /></span></div>
+        </div>
+        <div class="sub" style="margin:2px 0 0">0 = 一直显示，直到下一条消息替换</div>
         <div class="row" style="justify-content:flex-start;gap:14px"><span style="margin-right:auto">字体颜色</span>
           <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)">⏰<input type="color" id="col-time" value="#ffffff" style="width:34px;height:26px;border:none;padding:0;background:none;cursor:pointer" /></label>
           <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)">📅<input type="color" id="col-date" value="#9a9ab0" style="width:34px;height:26px;border:none;padding:0;background:none;cursor:pointer" /></label>
@@ -277,7 +281,7 @@ document.querySelectorAll('.btn-save').forEach(b => {
   b.addEventListener('click', () => {
     const card = b.dataset.card;
     if (card === 'src') saveCard('src', ['infoSource']);
-    else if (card === 'display') saveCard('display', ['showTime','showDate','showWeather','showBubble','bubblePlaceholder','bubbleScrollSpeed','bubbleFontSize','fontColors','city','weatherUnit']);
+    else if (card === 'display') saveCard('display', ['showTime','showDate','showWeather','showBubble','bubblePlaceholder','bubbleScrollSpeed','bubbleHold','bubbleFontSize','fontColors','city','weatherUnit']);
     else if (card === 'layout') saveCard('layout', ['layout']);
     else if (card === 'agent') saveCard('agent', ['astrbotUrl','astrbotKey','astrbotSession']);
   });
@@ -318,6 +322,10 @@ function render() {
   $('rng-fontsize').value = config.bubbleFontSize || 14;
   $('num-fontsize').value = config.bubbleFontSize || 14;
   $('fontsize-val').textContent = (config.bubbleFontSize || 14) + 'px';
+  const hold = config.bubbleHold ?? 0;
+  $('rng-hold').value = hold;
+  $('num-hold').value = hold;
+  $('hold-val').textContent = hold > 0 ? hold + 's' : '0s（一直）';
   const fc = config.fontColors || {};
   $('col-time').value = fc.time || '#ffffff';
   $('col-date').value = fc.date || '#9a9ab0';
@@ -395,6 +403,11 @@ function bindPair(sliderId, numId, onVal) {
 bindPair('rng-speed', 'num-speed', (v) => {
   $('speed-val').textContent = v + 'px/s';
   draft.bubbleScrollSpeed = v;
+  markDirty('display');
+});
+bindPair('rng-hold', 'num-hold', (v) => {
+  $('hold-val').textContent = v > 0 ? v + 's' : '0s（一直）';
+  draft.bubbleHold = v;
   markDirty('display');
 });
 // 气泡字体大小（滑条+数值联动）

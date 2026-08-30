@@ -32,7 +32,8 @@ DEFAULT_CONFIG = {
     "city": "",
     "weatherUnit": "c",
     "zoom": 1.43,
-    "bubbleScrollSpeed": 20,
+    "bubbleScrollSpeed": 20,  # 气泡循环滚动速度（px/s）
+    "bubbleHold": 0,  # 气泡滞留秒数（0 = 一直显示，直到下一条消息替换）
     "bubblePlaceholder": "等待 agent 消息…",
     "bubbleFontSize": 14,
     "fontColors": {"time": "#ffffff", "date": "#9a9ab0", "weather": "#ffffff", "bubble": "#e8e8f2"},
@@ -116,7 +117,7 @@ def api_config():
         return jsonify(load_config())
     cfg = load_config()
     data = request.get_json(silent=True) or {}
-    for k in ("showTime", "showDate", "showWeather", "showBubble", "city", "weatherUnit", "model", "zoom", "layout", "bubbleScrollSpeed", "bubblePlaceholder", "infoSource", "bubbleFontSize", "fontColors", "astrbotUrl", "astrbotKey", "astrbotSession"):
+    for k in ("showTime", "showDate", "showWeather", "showBubble", "city", "weatherUnit", "model", "zoom", "layout", "bubbleScrollSpeed", "bubbleHold", "bubblePlaceholder", "infoSource", "bubbleFontSize", "fontColors", "astrbotUrl", "astrbotKey", "astrbotSession"):
         if k in data:
             cfg[k] = data[k]
     save_config(cfg)

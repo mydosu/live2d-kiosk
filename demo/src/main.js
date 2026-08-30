@@ -63,6 +63,7 @@ let CONFIG = {
   weatherUnit: 'c',
   zoom: 1.43, // 模型缩放（管理后台可调，适配画布空白大的模型）
   bubbleScrollSpeed: 20, // 气泡循环滚动速度（px/s）
+  bubbleHold: 0, // 气泡滞留秒数（0 = 一直显示，直到下一条消息替换）
   bubblePlaceholder: '等待 agent 消息…', // 气泡空消息占位文本
   bubbleFontSize: 14, // 气泡字体大小基准（px，长消息自动缩小）
   fontColors: { time: '#ffffff', date: '#9a9ab0', weather: '#ffffff', bubble: '#e8e8f2' }, // 各模块字体颜色
@@ -170,12 +171,15 @@ function showBubble(text) {
   // 自动循环滚动（等布局完成再启动）
   requestAnimationFrame(startAutoScroll)
   clearTimeout(bubbleTimer)
-  bubbleTimer = setTimeout(() => {
-    chatBubble.classList.add('empty')
-    chatBubble.textContent = CONFIG.bubblePlaceholder || '等待 agent 消息…'
-    chatBubble.style.fontSize = (Number(CONFIG.bubbleFontSize) || 14) + 'px' // 恢复基准字号
-    stopAutoScroll()
-  }, 60000)
+  const hold = Number(CONFIG.bubbleHold) || 0
+  if (hold > 0) {
+    bubbleTimer = setTimeout(() => {
+      chatBubble.classList.add('empty')
+      chatBubble.textContent = CONFIG.bubblePlaceholder || '等待 agent 消息…'
+      chatBubble.style.fontSize = (Number(CONFIG.bubbleFontSize) || 14) + 'px' // 恢复基准字号
+      stopAutoScroll()
+    }, hold * 1000)
+  }
 }
 
 /* ---------------- 配置与模型列表（管理后台 API） ---------------- */
