@@ -303,6 +303,12 @@ function handleWSMessage(msg) {
     case 'speak':
       showBubble(msg.text)
       break
+    case 'clear': // 后台「清空消息」：气泡恢复占位
+      chatBubble.classList.add('empty')
+      chatBubble.textContent = CONFIG.bubblePlaceholder || '等待 agent 消息…'
+      chatBubble.style.fontSize = (Number(CONFIG.bubbleFontSize) || 14) + 'px'
+      stopAutoScroll()
+      break
     case 'timeinfo': // RNDIS 模式：电脑推送时间/日期/天气/位置
       if (msg.time || msg.date) {
         externalClock = { time: msg.time || '', date: msg.date || '' }

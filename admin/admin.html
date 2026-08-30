@@ -85,6 +85,8 @@
   .btn-save.dirty { background:linear-gradient(135deg,#ffb13d,#ffcf7a) !important; }
   .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:rgba(255,255,255,.85); backdrop-filter:blur(12px); color:var(--text); border:1px solid var(--border); box-shadow:0 8px 24px rgba(255,111,159,.25); padding:10px 18px; border-radius:12px; font-size:13px; opacity:0; transition:.3s; pointer-events:none; z-index:99; }
   .toast.show { opacity:1; }
+  .rst { background:none; border:none; cursor:pointer; color:var(--dim); font-size:15px; padding:1px 7px; border-radius:6px; line-height:1; flex-shrink:0; }
+  .rst:hover { background:rgba(255,111,159,.12); color:var(--accent); }
   .hidden { display:none; }
   .bottom-btns { display:flex; flex-direction:column; gap:10px; margin-top:16px; }
   @media (max-width:720px) { .layout-row { grid-template-columns:1fr; } .axes { grid-template-columns:1fr; } }
@@ -210,7 +212,10 @@
         <div class="sub" style="margin:8px 0 0">屏幕连接状态：<b id="shell-status" style="color:var(--accent)">检测中…</b></div>
         <div class="sub" style="margin:8px 0 0">助手可以发送三类指令：<b>表情</b>（如开心、难过）、<b>动作</b>（如挥手、点头）、<b>说话</b>（显示文字气泡）</div>
         <div class="sub" style="margin:8px 0 0">详细对接方法请参考说明书中的《智能助手对接指南》</div>
-        <div style="margin-top:10px"><button class="btn btn-primary" id="btn-test">发送测试消息</button></div>
+        <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-primary" id="btn-test">发送测试消息</button>
+          <button class="btn" id="btn-clear-msg" style="padding:6px 16px">🧹 清空屏幕消息</button>
+        </div>
         <button class="btn btn-primary btn-save" data-card="agent" style="margin-top:8px">💾 保存设置</button>
       </div>
       <div class="bottom-btns">
@@ -295,7 +300,88 @@ async function load() {
   config = cfg; models = m.models || [];
   render();
   refreshSessions(true);  // 自动拉取会话列表（静默），避免刷新后只有"全部会话"
+  attachAllResets();      // 单项重置按钮
 }
+
+// ================= 单项重置 =================
+let defaults = {};
+async function loadDefaults() {
+  try { const r = await fetch(API + '/api/config/defaults'); defaults = await r.json(); } catch (e) {}
+}
+function setPair(sliderId, numId, v) {
+  $(sliderId).value = v; $(numId).value = v;
+}
+function resetField(field, card) {
+  const dv = defaults[field];
+  if (dv === undefined) return;
+  draft[field] = dv;
+  switch (field) {
+    case 'bubbleScrollSpeed': setPair('rng-speed','num-speed', dv); $('speed-val').textContent = dv + 'px/s'; break;
+    case 'bubbleFontSize': setPair('rng-fontsize','num-fontsize', dv); $('fontsize-val').textContent = dv + 'px'; break;
+    case 'bubbleHold': setPair('rng-hold','num-hold', dv); $('hold-val').textContent = dv > 0 ? dv + 's' : '0s（一直）'; break;
+    case 'bubblePlaceholder': $('inp-placeholder').value = dv; break;
+    case 'city': $('inp-city').value = dv; break;
+    case 'weatherUnit': $('sel-unit').value = dv; break;
+    case 'fontColors': $('col-time').value = dv.time; $('col-date').value = dv.date; $('col-weather').value = dv.weather; $('col-bubble').value = dv.bubble; break;
+    case 'astrbotUrl': $('inp-astrbot-url').value = dv; break;
+    case 'astrbotKey': $('inp-astrbot-key').value = dv; break;
+    case 'astrbotSession': $('sel-session').value = dv; refreshSessions(true); break;
+  }
+  markDirty(card);
+  toast('已重置为默认值，记得保存');
+}
+function attachReset(inputEl, field, card) {
+  if (!inputEl) return;
+  const wrap = inputEl.closest('.row');
+  if (!wrap) return;
+  const btn = document.createElement('button');
+  btn.className = 'rst'; btn.textContent = '↺'; btn.title = '重置此项为默认值';
+  btn.onclick = () => resetField(field, card);
+  wrap.appendChild(btn);
+}
+function attachLayoutReset(module) {
+  const first = $('lay-' + module + '-x');
+  if (!first) return;
+  const row = first.closest('.layout-row');
+  if (!row) return;
+  const btn = document.createElement('button');
+  btn.className = 'rst'; btn.textContent = '↺'; btn.title = '重置 ' + module + ' 的位置与大小';
+  btn.onclick = () => {
+    draft.layout = JSON.parse(JSON.stringify(config.layout || {}));
+    draft.layout[module] = { x: 0, y: 0, scale: 1 };
+    ['x','y'].forEach(a => {
+      $('lay-' + module + '-' + a).value = 0;
+      $('lay-' + module + '-' + a + 'n').value = 0;
+      $('lay-' + module + '-' + a + 'v').textContent = 0;
+    });
+    $('lay-' + module + '-s').value = 1;
+    $('lay-' + module + '-sn').value = 1;
+    $('lay-' + module + '-sv').textContent = '1.00';
+    markDirty('layout');
+    toast('已重置' + module + '，记得保存');
+  };
+  row.appendChild(btn);
+}
+function attachAllResets() {
+  loadDefaults();
+  attachReset($('rng-speed'), 'bubbleScrollSpeed', 'display');
+  attachReset($('rng-fontsize'), 'bubbleFontSize', 'display');
+  attachReset($('rng-hold'), 'bubbleHold', 'display');
+  attachReset($('inp-placeholder'), 'bubblePlaceholder', 'display');
+  attachReset($('inp-city'), 'city', 'display');
+  attachReset($('sel-unit'), 'weatherUnit', 'display');
+  attachReset($('col-time'), 'fontColors', 'display');
+  attachReset($('inp-astrbot-url'), 'astrbotUrl', 'agent');
+  attachReset($('inp-astrbot-key'), 'astrbotKey', 'agent');
+  attachReset($('sel-session'), 'astrbotSession', 'agent');
+  ['time','date','weather','bubble','model'].forEach(attachLayoutReset);
+}
+
+// ================= 清空屏幕消息 =================
+$('btn-clear-msg').addEventListener('click', async () => {
+  const r = await fetch(API + '/api/clear', { method: 'POST' }).then(x => x.json());
+  toast(r.ok ? ('已清空屏幕消息' + (r.cleared ? '（插件队列 ' + r.cleared + ' 条）' : '')) : '清空失败');
+});
 
 function render() {
   // 模型按钮

@@ -363,6 +363,39 @@ def astrbot_sessions():
         return jsonify({"ok": False, "error": str(e), "sessions": {}})
 
 
+@app.route("/api/config/defaults")
+def config_defaults():
+    """返回默认配置（前端单项重置按钮用）"""
+    return jsonify(DEFAULT_CONFIG)
+
+
+@app.route("/api/clear", methods=["POST"])
+def api_clear():
+    """清空屏幕消息：清插件队列（代理）+ 本地队列 + 通知页面恢复占位"""
+    import urllib.request
+
+    cfg = load_config()
+    base = (cfg.get("astrbotUrl") or "").rstrip("/")
+    key = cfg.get("astrbotKey") or ""
+    cleared_remote = 0
+    if base and key:
+        try:
+            req = urllib.request.Request(
+                f"{base}/api/v1/plugins/extensions/live2d-kiosk/clear",
+                headers={"Authorization": f"Bearer {key}"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=8) as r:
+                d = json.loads(r.read().decode("utf-8"))
+                cleared_remote = d.get("cleared", 0)
+        except Exception:
+            pass
+    with _RECENT_LOCK:
+        RECENT_MESSAGES.clear()
+    broadcast({"type": "clear"})
+    return jsonify({"ok": True, "cleared": cleared_remote})
+
+
 @app.route("/api/poll")
 def api_poll():
     """页面轮询：拉取最近消息并清空"""
