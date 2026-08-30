@@ -19,3 +19,6 @@ Thumbs.db
 
 # Edge headless 测试临时 profile
 demo/.edge-verify-profile/
+
+__pycache__/
+*.pyc

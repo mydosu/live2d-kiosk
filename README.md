@@ -35,8 +35,9 @@ python scripts/deploy.py
 
 ```bash
 systemctl status live2d-web    # 页面 :80
-systemctl status live2d-admin  # 管理后台 :8080 + WebSocket :9000
+systemctl status live2d-admin  # 管理后台 :8080
 systemctl status live2d-kiosk  # Xorg + openbox + Chromium 全屏
+systemctl status board-shell   # 板子壳：轮询 astrbot 队列控屏（模式 B）
 ```
 
 管理后台：`http://<板子IP>:8080`（USB 连接为 `http://192.168.137.2:8080`）。
@@ -44,12 +45,14 @@ systemctl status live2d-kiosk  # Xorg + openbox + Chromium 全屏
 ## 架构
 
 ```
-┌─────────────┐   POST /api/send   ┌──────────────────┐   ws :9000   ┌─────────────┐
-│ astrbot 等  │ ─────────────────▶ │ live2d-admin     │ ───────────▶ │ live2d-web  │
-│   Agent     │   emotion/action/  │ (Flask + ws)     │   broadcast  │ (Chromium)  │
-└─────────────┘   speak/timeinfo   └──────────────────┘              └─────────────┘
+┌─────────────┐  插件内存队列    ┌──────────────┐  3s 轮询  ┌─────────────┐  /api/poll  ┌────────────┐
+│ astrbot 等  │ ──────────────▶ │ 板子壳        │ ────────▶ │ live2d-admin │ ──────────▶ │ live2d-web │
+│   Agent     │  pending API    │ board_shell.py │          │ (Flask :8080) │   2s       │ (Chromium) │
+└─────────────┘  (Bearer Key)   └──────────────┘          └─────────────┘            └────────────┘
 ```
 
+- **模式 B（板子在外面）**：astrbot 插件（[astrbot-live2d-kiosk](https://github.com/mydosu/astrbot-live2d-kiosk)）把消息/LLM 回复写入内存队列，板子壳 `board_shell.py` 每 3s 轮询拉取并控屏——板子主动出站，无需公网/隧道；Windows 仅作 USB(RNDIS) 网桥
+- **页面通道**：页面 2s HTTP 轮询 `/api/poll`（拉取即清空），无 WebSocket 依赖
 - 配置持久化：`config.json`（部署脚本自动备份恢复，勿手动 `cp -r dist/.` 覆盖）
 - 一键部署：`scripts/deploy.py`（构建 → 上传 → 备份 config → 重启 → 验证）
 
