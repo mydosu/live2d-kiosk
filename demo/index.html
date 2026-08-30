@@ -104,8 +104,9 @@
         width: fit-content;
         max-width: 100%;
         min-width: 0; /* flex 子项允许收缩（否则 fit-content 会撑破 max-width） */
-        word-break: break-word;
+        word-break: break-all; /* 强制断行（长 URL/英文串也不溢出）；中文天然可断不受影响 */
         overflow-wrap: break-word;
+        transform-origin: left top; /* 缩放从左上角开始：放大时向右下扩展，左边不超出屏幕 */
         max-height: 40%;
         overflow-y: auto;
         scrollbar-width: none; /* 隐藏滚动条（kiosk 无鼠标，滚动条无意义） */
