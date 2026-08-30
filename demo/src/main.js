@@ -255,11 +255,22 @@ const BG_THEMES = {
   dark: 'linear-gradient(160deg,#14142a 0%,#0a0a14 100%)',
   mint: 'linear-gradient(160deg,#cdeee4 0%,#e9fff7 55%,#d6eaff 100%)',
   sunset: 'linear-gradient(160deg,#ffb98a 0%,#ffd2c2 55%,#ffe3d6 100%)',
+  ocean: 'linear-gradient(160deg,#0e2a47 0%,#14557d 50%,#1a7a9e 100%)',
+  nebula: 'radial-gradient(ellipse at 25% 30%, rgba(140,90,255,.35), transparent 55%), radial-gradient(ellipse at 80% 70%, rgba(255,90,160,.25), transparent 50%), linear-gradient(160deg,#1a1033 0%,#12082a 60%,#0c0620 100%)',
+  peach: 'linear-gradient(160deg,#ffc9a3 0%,#ffb59e 45%,#ff9eb5 100%)',
+  lavender: 'linear-gradient(160deg,#e6d9ff 0%,#f0e6ff 55%,#d9ccff 100%)',
+  candy: 'linear-gradient(160deg,#ffd6e8 0%,#d6ecff 55%,#e8f6ff 100%)',
 }
 function applyBg() {
   const el = document.getElementById('bg')
   if (!el) return
-  el.style.background = BG_THEMES[CONFIG.bgTheme] || BG_THEMES.aurora
+  const img = CONFIG.bgImage
+  if (img) {
+    // 自定义背景图优先：cover 铺满 + 居中
+    el.style.background = `url(${API_BASE}/bg/${img}) center/cover no-repeat`
+  } else {
+    el.style.background = BG_THEMES[CONFIG.bgTheme] || BG_THEMES.aurora
+  }
 }
 
 // 模块自由排版：按 layout 配置设置每个模块的偏移与缩放（transform）

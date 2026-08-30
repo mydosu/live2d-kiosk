@@ -191,9 +191,33 @@
             <button class="bg-chip" data-theme="dark" title="深色" style="background:linear-gradient(160deg,#14142a,#0a0a14)"></button>
             <button class="bg-chip" data-theme="mint" title="薄荷" style="background:linear-gradient(160deg,#cdeee4,#d6eaff)"></button>
             <button class="bg-chip" data-theme="sunset" title="日落" style="background:linear-gradient(160deg,#ffb98a,#ffe3d6)"></button>
+            <button class="bg-chip" data-theme="ocean" title="海洋" style="background:linear-gradient(160deg,#0e2a47,#1a7a9e)"></button>
+            <button class="bg-chip" data-theme="nebula" title="星云" style="background:radial-gradient(ellipse at 25% 30%, rgba(140,90,255,.6), transparent 55%), radial-gradient(ellipse at 80% 70%, rgba(255,90,160,.45), transparent 50%), linear-gradient(160deg,#1a1033,#0c0620)"></button>
+            <button class="bg-chip" data-theme="peach" title="蜜桃" style="background:linear-gradient(160deg,#ffc9a3,#ff9eb5)"></button>
+            <button class="bg-chip" data-theme="lavender" title="薰衣草" style="background:linear-gradient(160deg,#e6d9ff,#d9ccff)"></button>
+            <button class="bg-chip" data-theme="candy" title="糖果" style="background:linear-gradient(160deg,#ffd6e8,#e8f6ff)"></button>
           </div>
         </div>
-        <div class="sub" style="margin:0">选择屏幕背景渐变方案（点色块选择后保存）</div>
+        <div class="sub" style="margin:0">选择背景渐变方案，或上传自定义背景图（点色块/上传后保存）</div>
+        <div class="row"><span>自定义背景图</span>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <label class="file-btn" for="bg-file" style="padding:8px 14px">
+              <span>上传图片</span>
+              <span class="fname" id="bg-file-name">支持 jpg/png</span>
+              <input type="file" id="bg-file" accept="image/*" hidden />
+            </label>
+            <img id="bg-preview" alt="" style="display:none;width:64px;height:40px;object-fit:cover;border-radius:8px;border:1px solid var(--border)" />
+            <button class="btn" id="btn-bg-remove" style="padding:6px 12px;display:none">移除背景图</button>
+          </div>
+        </div>
+        <div class="sub" id="bg-crop-wrap" style="margin:0;display:none">
+          <canvas id="bg-crop-canvas" style="max-width:100%;border-radius:12px;border:1px solid var(--border);cursor:crosshair;touch-action:none"></canvas>
+          <div style="margin-top:8px;display:flex;gap:10px">
+            <button class="btn btn-primary" id="btn-bg-crop-ok" style="padding:6px 14px">确认并应用</button>
+            <button class="btn" id="btn-bg-crop-cancel" style="padding:6px 14px">取消</button>
+          </div>
+          <div style="margin-top:4px">拖动裁剪框调整取景区域（比例已按屏幕适配），确认后应用为背景</div>
+        </div>
         <div class="row" style="justify-content:flex-start;gap:14px"><span style="margin-right:auto">字体颜色</span>
           <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)">时间<input type="color" id="col-time" value="#ffffff" style="width:34px;height:26px;border:none;padding:0;background:none;cursor:pointer" /></label>
           <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)">日期<input type="color" id="col-date" value="#9a9ab0" style="width:34px;height:26px;border:none;padding:0;background:none;cursor:pointer" /></label>
@@ -452,6 +476,7 @@ function render() {
   $('col-bubble').value = fc.bubble || '#e8e8f2';
   // 背景主题选中态
   document.querySelectorAll('.bg-chip').forEach(b => b.classList.toggle('active', b.dataset.theme === (config.bgTheme || 'aurora')));
+  renderBgImage();
   // 信息源
   const src = config.infoSource || 'wifi';
   $('src-wifi').checked = src === 'wifi';
@@ -546,12 +571,177 @@ bindPair('rng-fontsize', 'num-fontsize', (v) => {
 });
 // 屏幕背景主题选择
 document.querySelectorAll('.bg-chip').forEach(b => {
-  b.addEventListener('click', () => {
+  b.addEventListener('click', async () => {
+    // 切换到渐变主题时自动移除自定义背景图（图片优先于主题）
+    if (config.bgImage) {
+      await fetch(API + '/api/bg', { method: 'DELETE' }).catch(() => {});
+      config.bgImage = '';
+      renderBgImage();
+    }
     document.querySelectorAll('.bg-chip').forEach(x => x.classList.remove('active'));
     b.classList.add('active');
     draft.bgTheme = b.dataset.theme;
     markDirty('display');
   });
+});
+
+// ================= 自定义背景图：上传 + 裁剪 =================
+let cropImg = null;   // 原图
+let cropBox = null;   // 裁剪框（原图像素坐标）
+const CROP_RATIO = 4 / 3; // 屏幕显示比例（800x600 viewport）
+
+function drawCrop() {
+  const cv = $('bg-crop-canvas');
+  const ctx = cv.getContext('2d');
+  const sc = cv.width / cropImg.width;
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.drawImage(cropImg, 0, 0, cv.width, cv.height);
+  const bx = cropBox.x * sc, by = cropBox.y * sc, bw = cropBox.w * sc, bh = cropBox.h * sc;
+  ctx.fillStyle = 'rgba(0,0,0,.45)';
+  ctx.fillRect(0, 0, cv.width, by);
+  ctx.fillRect(0, by + bh, cv.width, cv.height - by - bh);
+  ctx.fillRect(0, by, bx, bh);
+  ctx.fillRect(bx + bw, by, cv.width - bx - bw, bh);
+  ctx.strokeStyle = '#ff6f9f';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(bx, by, bw, bh);
+  ctx.strokeStyle = 'rgba(255,255,255,.5)';
+  ctx.lineWidth = 1;
+  for (let i = 1; i < 3; i++) {
+    ctx.beginPath(); ctx.moveTo(bx + bw * i / 3, by); ctx.lineTo(bx + bw * i / 3, by + bh); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(bx, by + bh * i / 3); ctx.lineTo(bx + bw, by + bh * i / 3); ctx.stroke();
+  }
+}
+function initCrop(img) {
+  cropImg = img;
+  const maxW = 520, maxH = 420;
+  const sc = Math.min(maxW / img.width, maxH / img.height, 1);
+  const cv = $('bg-crop-canvas');
+  cv.width = Math.round(img.width * sc);
+  cv.height = Math.round(img.height * sc);
+  // 初始裁剪框：按屏幕比例、居中、占 80% 宽
+  const w = img.width * 0.8, h = w / CROP_RATIO;
+  cropBox = { x: (img.width - w) / 2, y: (img.height - h) / 2, w, h };
+  $('bg-crop-wrap').style.display = 'block';
+  drawCrop();
+}
+(function () {
+  const cv = $('bg-crop-canvas');
+  let drag = null;
+  const toImg = (e) => {
+    const r = cv.getBoundingClientRect();
+    const sc = cv.width / r.width;
+    return { x: (e.clientX - r.left) * sc, y: (e.clientY - r.top) * sc };
+  };
+  const hit = (p) => {
+    const sc = cv.width / cropImg.width;
+    const bx = cropBox.x * sc, by = cropBox.y * sc, bw = cropBox.w * sc, bh = cropBox.h * sc, m = 14;
+    if (p.x > bx - m && p.x < bx + m && p.y > by - m && p.y < by + m) return 'nw';
+    if (p.x > bx + bw - m && p.x < bx + bw + m && p.y > by - m && p.y < by + m) return 'ne';
+    if (p.x > bx - m && p.x < bx + m && p.y > by + bh - m && p.y < by + bh + m) return 'sw';
+    if (p.x > bx + bw - m && p.x < bx + bw + m && p.y > by + bh - m && p.y < by + bh + m) return 'se';
+    if (p.x > bx && p.x < bx + bw && p.y > by && p.y < by + bh) return 'move';
+    return null;
+  };
+  cv.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    const p = toImg(e);
+    const h = hit(p);
+    if (h) {
+      drag = { mode: h, sx: p.x, sy: p.y, ob: { ...cropBox } };
+      cv.setPointerCapture(e.pointerId);
+    }
+  });
+  cv.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    const p = toImg(e);
+    const sc = cv.width / cropImg.width;
+    const dx = (p.x - drag.sx) / sc, dy = (p.y - drag.sy) / sc;
+    const b = drag.ob;
+    const nb = { ...b };
+    const minS = Math.min(cropImg.width, cropImg.height) * 0.15;
+    if (drag.mode === 'move') {
+      nb.x = Math.max(0, Math.min(cropImg.width - b.w, b.x + dx));
+      nb.y = Math.max(0, Math.min(cropImg.height - b.h, b.y + dy));
+    } else if (drag.mode === 'se') {
+      nb.w = Math.max(minS, Math.min(cropImg.width - b.x, b.w + dx));
+      nb.h = nb.w / CROP_RATIO;
+      nb.h = Math.max(minS, Math.min(cropImg.height - b.y, nb.h));
+      nb.w = nb.h * CROP_RATIO;
+    } else if (drag.mode === 'nw') {
+      nb.w = Math.max(minS, Math.min(b.w + b.x, b.w - dx));
+      nb.h = nb.w / CROP_RATIO;
+      nb.x = b.x + b.w - nb.w;
+      nb.y = b.y + b.h - nb.h;
+      if (nb.y < 0) { nb.y = 0; nb.h = b.h; nb.w = b.h * CROP_RATIO; nb.x = b.x + b.w - nb.w; }
+    } else if (drag.mode === 'ne') {
+      nb.w = Math.max(minS, Math.min(cropImg.width - b.x, b.w + dx));
+      nb.h = nb.w / CROP_RATIO;
+      nb.x = b.x;
+      nb.y = b.y + b.h - nb.h;
+      if (nb.y < 0) { nb.y = 0; nb.h = b.h; nb.w = b.h * CROP_RATIO; }
+    } else if (drag.mode === 'sw') {
+      nb.w = Math.max(minS, Math.min(b.w + b.x, b.w - dx));
+      nb.h = nb.w / CROP_RATIO;
+      nb.x = b.x + b.w - nb.w;
+      nb.y = b.y;
+      if (nb.h + nb.y > cropImg.height) { nb.h = cropImg.height - nb.y; nb.w = nb.h * CROP_RATIO; nb.x = b.x + b.w - nb.w; }
+    }
+    cropBox = nb;
+    drawCrop();
+  });
+  cv.addEventListener('pointerup', () => { drag = null; });
+})();
+$('bg-file').addEventListener('change', (e) => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const img = new Image();
+  img.onload = () => { initCrop(img); $('bg-file-name').textContent = f.name; };
+  img.onerror = () => toast('图片加载失败');
+  img.src = URL.createObjectURL(f);
+});
+$('btn-bg-crop-cancel').addEventListener('click', () => {
+  $('bg-crop-wrap').style.display = 'none';
+  $('bg-file').value = '';
+});
+$('btn-bg-crop-ok').addEventListener('click', async () => {
+  if (!cropImg) return;
+  const out = document.createElement('canvas');
+  out.width = Math.max(2, Math.round(cropBox.w));
+  out.height = Math.max(2, Math.round(cropBox.h));
+  out.getContext('2d').drawImage(cropImg, cropBox.x, cropBox.y, cropBox.w, cropBox.h, 0, 0, out.width, out.height);
+  const blob = await new Promise(r => out.toBlob(r, 'image/jpeg', 0.9));
+  const fd = new FormData();
+  fd.append('file', blob, 'bg.jpg');
+  const btn = $('btn-bg-crop-ok');
+  btn.disabled = true; btn.textContent = '上传中…';
+  try {
+    const r = await fetch(API + '/api/bg/upload', { method: 'POST', body: fd }).then(x => x.json());
+    if (r.ok) {
+      toast('背景已应用');
+      $('bg-crop-wrap').style.display = 'none';
+      $('bg-file').value = '';
+      config.bgImage = r.bgImage;
+      renderBgImage();
+    } else {
+      toast(r.error || '上传失败');
+    }
+  } catch (err) {
+    toast('上传失败：' + err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = '确认并应用';
+  }
+});
+function renderBgImage() {
+  const img = config.bgImage;
+  $('bg-preview').style.display = img ? 'block' : 'none';
+  if (img) $('bg-preview').src = API + '/bg/' + img;
+  $('btn-bg-remove').style.display = img ? 'inline-block' : 'none';
+  $('bg-file-name').textContent = img ? '当前背景图已应用' : '支持 jpg/png';
+}
+$('btn-bg-remove').addEventListener('click', async () => {
+  const r = await fetch(API + '/api/bg', { method: 'DELETE' }).then(x => x.json());
+  if (r.ok) { config.bgImage = ''; renderBgImage(); toast('已移除背景图'); }
 });
 
 // ---------- AstrBot 连接 ----------

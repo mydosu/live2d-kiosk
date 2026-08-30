@@ -19,6 +19,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # /opt/dashboard/admin
 # Web 根目录与 admin 同级（/opt/dashboard/live2D panel）
 WEB_DIR = os.path.join(os.path.dirname(BASE_DIR), "live2D panel")
 RES_DIR = os.path.join(WEB_DIR, "Resources")
+BG_DIR = os.path.join(WEB_DIR, "bg")  # 自定义背景图目录
 CONFIG_PATH = os.path.join(WEB_DIR, "config.json")
 WS_PORT = 9000
 ADMIN_PORT = 8080
@@ -395,6 +396,56 @@ def api_clear():
         RECENT_MESSAGES.clear()
     broadcast({"type": "clear"})
     return jsonify({"ok": True, "cleared": cleared_remote})
+
+
+@app.route("/bg/<path:fname>")
+def bg_file(fname):
+    """自定义背景图静态服务（页面 #bg 引用）"""
+    return send_from_directory(BG_DIR, fname)
+
+
+@app.route("/api/bg/upload", methods=["POST"])
+def bg_upload():
+    """上传自定义背景图（保存到 bg/ 目录并写入配置）"""
+    f = request.files.get("file")
+    if not f or not f.filename:
+        return jsonify({"ok": False, "error": "未选择文件"})
+    ext = os.path.splitext(f.filename)[1].lower()
+    if ext not in (".jpg", ".jpeg", ".png", ".webp"):
+        return jsonify({"ok": False, "error": "仅支持 jpg/png/webp 图片"})
+    import time as _t
+
+    os.makedirs(BG_DIR, exist_ok=True)
+    # 清理旧背景图（只保留当前一张）
+    cfg = load_config()
+    old = cfg.get("bgImage")
+    if old:
+        try:
+            os.remove(os.path.join(BG_DIR, old))
+        except OSError:
+            pass
+    name = f"bg_{int(_t.time())}{ext}"
+    f.save(os.path.join(BG_DIR, name))
+    cfg["bgImage"] = name
+    save_config(cfg)
+    broadcast({"type": "config", "config": {"bgImage": name}})
+    return jsonify({"ok": True, "bgImage": name})
+
+
+@app.route("/api/bg", methods=["DELETE"])
+def bg_remove():
+    """移除自定义背景图（回到渐变主题）"""
+    cfg = load_config()
+    old = cfg.get("bgImage")
+    if old:
+        try:
+            os.remove(os.path.join(BG_DIR, old))
+        except OSError:
+            pass
+    cfg["bgImage"] = ""
+    save_config(cfg)
+    broadcast({"type": "config", "config": {"bgImage": ""}})
+    return jsonify({"ok": True})
 
 
 @app.route("/api/poll")
