@@ -67,6 +67,7 @@ let CONFIG = {
   bubblePlaceholder: '等待 agent 消息…', // 气泡空消息占位文本
   bubbleFontSize: 14, // 气泡字体大小基准（px，长消息自动缩小）
   fontColors: { time: '#ffffff', date: '#9a9ab0', weather: '#ffffff', bubble: '#e8e8f2' }, // 各模块字体颜色
+  bgTheme: 'aurora', // 屏幕背景主题：aurora(极光) | pink(粉嫩) | dark(深色) | mint(薄荷) | sunset(日落)
   showDate: true, // 显示日期/星期
   infoSource: 'wifi', // 时间/天气信息来源：wifi(网络获取) | rndis(用户电脑推送)
   // 模块自由排版：每个模块相对默认位置的像素偏移 + 缩放
@@ -242,8 +243,23 @@ function applyDisplayConfig() {
   if (fc.weather) weatherDisplay.style.color = fc.weather
   if (fc.bubble) chatBubble.style.color = fc.bubble
   applyLayout()
+  applyBg()
   // 缩放/布局配置变化时重新适配模型（模型不变则不重载）
   if (sprite) fitSprite(sprite, realModelSize)
+}
+
+// 屏幕背景主题（渐变预设；管理后台「显示设置」切换）
+const BG_THEMES = {
+  aurora: 'radial-gradient(ellipse at 20% 85%, rgba(124,92,255,.28), transparent 55%), radial-gradient(ellipse at 82% 12%, rgba(255,92,138,.20), transparent 50%), linear-gradient(160deg,#14142a 0%,#101018 55%,#0a0a14 100%)',
+  pink: 'linear-gradient(160deg,#ffd9e5 0%,#ffeef4 55%,#fde8ff 100%)',
+  dark: 'linear-gradient(160deg,#14142a 0%,#0a0a14 100%)',
+  mint: 'linear-gradient(160deg,#cdeee4 0%,#e9fff7 55%,#d6eaff 100%)',
+  sunset: 'linear-gradient(160deg,#ffb98a 0%,#ffd2c2 55%,#ffe3d6 100%)',
+}
+function applyBg() {
+  const el = document.getElementById('bg')
+  if (!el) return
+  el.style.background = BG_THEMES[CONFIG.bgTheme] || BG_THEMES.aurora
 }
 
 // 模块自由排版：按 layout 配置设置每个模块的偏移与缩放（transform）

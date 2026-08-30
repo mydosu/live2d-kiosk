@@ -37,6 +37,7 @@ DEFAULT_CONFIG = {
     "bubblePlaceholder": "等待 agent 消息…",
     "bubbleFontSize": 14,
     "fontColors": {"time": "#ffffff", "date": "#9a9ab0", "weather": "#ffffff", "bubble": "#e8e8f2"},
+    "bgTheme": "aurora",  # 屏幕背景主题：aurora(极光) | pink(粉嫩) | dark(深色) | mint(薄荷) | sunset(日落)
     "infoSource": "wifi",  # 时间/天气信息来源：wifi(网络获取) | rndis(用户电脑推送)
     "astrbotUrl": "",  # AstrBot 主机地址（板子壳连接用）：局域网如 http://192.168.5.6:6185，或 DDNS 域名
     "astrbotKey": "",  # AstrBot API Key（WebUI 设置→API Key 创建，勾选 plugin/chat/file scope）
@@ -117,7 +118,7 @@ def api_config():
         return jsonify(load_config())
     cfg = load_config()
     data = request.get_json(silent=True) or {}
-    for k in ("showTime", "showDate", "showWeather", "showBubble", "city", "weatherUnit", "model", "zoom", "layout", "bubbleScrollSpeed", "bubbleHold", "bubblePlaceholder", "infoSource", "bubbleFontSize", "fontColors", "astrbotUrl", "astrbotKey", "astrbotSession"):
+    for k in ("showTime", "showDate", "showWeather", "showBubble", "city", "weatherUnit", "model", "zoom", "layout", "bubbleScrollSpeed", "bubbleHold", "bubblePlaceholder", "infoSource", "bubbleFontSize", "fontColors", "bgTheme", "astrbotUrl", "astrbotKey", "astrbotSession"):
         if k in data:
             cfg[k] = data[k]
     save_config(cfg)

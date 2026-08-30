@@ -91,6 +91,9 @@
   .file-btn:hover { background:#fff; border-color:var(--accent); box-shadow:0 4px 14px rgba(255,111,159,.18); }
   .file-btn:active { transform:scale(.98); }
   .file-btn .fname { color:var(--dim); font-size:13px; max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .bg-chip { width:44px; height:30px; border-radius:9px; border:2px solid transparent; cursor:pointer; transition:.2s; box-shadow:0 2px 6px rgba(0,0,0,.12); }
+  .bg-chip:hover { transform:scale(1.1); box-shadow:0 4px 10px rgba(0,0,0,.2); }
+  .bg-chip.active { border-color:var(--accent); box-shadow:0 0 0 3px rgba(255,111,159,.3), 0 4px 10px rgba(0,0,0,.15); transform:scale(1.08); }
   .btn { padding:10px 18px; border-radius:12px; border:none; cursor:pointer; font-size:14px; transition:.2s; }
   .btn-primary { background:linear-gradient(135deg,#ff6f9f,#ff9fc4); color:#fff; box-shadow:0 4px 14px rgba(255,111,159,.35); }
   .btn-danger { background:linear-gradient(135deg,#e5484d,#f0716e); color:#fff; }
@@ -181,11 +184,21 @@
           <div class="axes"><span><input type="range" id="rng-hold" min="0" max="300" step="5" style="width:130px" /><input type="number" id="num-hold" min="0" max="300" step="5" /></span></div>
         </div>
         <div class="sub" style="margin:2px 0 0">0 = 一直显示，直到下一条消息替换</div>
+        <div class="row"><span>屏幕背景</span>
+          <div id="bg-themes" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <button class="bg-chip" data-theme="aurora" title="极光（默认）" style="background:radial-gradient(ellipse at 20% 85%, rgba(124,92,255,.5), transparent 55%), radial-gradient(ellipse at 82% 12%, rgba(255,92,138,.4), transparent 50%), linear-gradient(160deg,#14142a,#0a0a14)"></button>
+            <button class="bg-chip" data-theme="pink" title="粉嫩" style="background:linear-gradient(160deg,#ffd9e5,#fde8ff)"></button>
+            <button class="bg-chip" data-theme="dark" title="深色" style="background:linear-gradient(160deg,#14142a,#0a0a14)"></button>
+            <button class="bg-chip" data-theme="mint" title="薄荷" style="background:linear-gradient(160deg,#cdeee4,#d6eaff)"></button>
+            <button class="bg-chip" data-theme="sunset" title="日落" style="background:linear-gradient(160deg,#ffb98a,#ffe3d6)"></button>
+          </div>
+        </div>
+        <div class="sub" style="margin:0">选择屏幕背景渐变方案（点色块选择后保存）</div>
         <div class="row" style="justify-content:flex-start;gap:14px"><span style="margin-right:auto">字体颜色</span>
-          <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)"><input type="color" id="col-time" value="#ffffff" style="width:34px;height:26px;border:none;padding:0;background:none;cursor:pointer" /></label>
-          <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)"><input type="color" id="col-date" value="#9a9ab0" style="width:34px;height:26px;border:none;padding:0;background:none;cursor:pointer" /></label>
-          <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)"><input type="color" id="col-weather" value="#ffffff" style="width:34px;height:26px;border:none;padding:0;background:none;cursor:pointer" /></label>
-          <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)"><input type="color" id="col-bubble" value="#e8e8f2" style="width:34px;height:26px;border:none;padding:0;background:none;cursor:pointer" /></label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)">时间<input type="color" id="col-time" value="#ffffff" style="width:34px;height:26px;border:none;padding:0;background:none;cursor:pointer" /></label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)">日期<input type="color" id="col-date" value="#9a9ab0" style="width:34px;height:26px;border:none;padding:0;background:none;cursor:pointer" /></label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)">天气<input type="color" id="col-weather" value="#ffffff" style="width:34px;height:26px;border:none;padding:0;background:none;cursor:pointer" /></label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)">气泡<input type="color" id="col-bubble" value="#e8e8f2" style="width:34px;height:26px;border:none;padding:0;background:none;cursor:pointer" /></label>
         </div>
         <div class="sub" style="margin:0">提示：消息较长时气泡会自动循环滚动展示</div>
         <div class="row"><span>城市（留空 = 自动定位）</span><input type="text" id="inp-city" placeholder="如：上海" /></div>
@@ -305,7 +318,7 @@ document.querySelectorAll('.btn-save').forEach(b => {
   b.addEventListener('click', () => {
     const card = b.dataset.card;
     if (card === 'src') saveCard('src', ['infoSource']);
-    else if (card === 'display') saveCard('display', ['showTime','showDate','showWeather','showBubble','bubblePlaceholder','bubbleScrollSpeed','bubbleHold','bubbleFontSize','fontColors','city','weatherUnit']);
+    else if (card === 'display') saveCard('display', ['showTime','showDate','showWeather','showBubble','bubblePlaceholder','bubbleScrollSpeed','bubbleHold','bubbleFontSize','fontColors','bgTheme','city','weatherUnit']);
     else if (card === 'layout') saveCard('layout', ['layout']);
     else if (card === 'agent') saveCard('agent', ['astrbotUrl','astrbotKey','astrbotSession']);
   });
@@ -437,6 +450,8 @@ function render() {
   $('col-date').value = fc.date || '#9a9ab0';
   $('col-weather').value = fc.weather || '#ffffff';
   $('col-bubble').value = fc.bubble || '#e8e8f2';
+  // 背景主题选中态
+  document.querySelectorAll('.bg-chip').forEach(b => b.classList.toggle('active', b.dataset.theme === (config.bgTheme || 'aurora')));
   // 信息源
   const src = config.infoSource || 'wifi';
   $('src-wifi').checked = src === 'wifi';
@@ -526,6 +541,15 @@ bindPair('rng-fontsize', 'num-fontsize', (v) => {
 ['time','date','weather','bubble'].forEach((k) => {
   $('col-' + k).addEventListener('input', (e) => {
     draft.fontColors = { ...(draft.fontColors || config.fontColors || {}), [k]: e.target.value };
+    markDirty('display');
+  });
+});
+// 屏幕背景主题选择
+document.querySelectorAll('.bg-chip').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('.bg-chip').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    draft.bgTheme = b.dataset.theme;
     markDirty('display');
   });
 });
