@@ -199,6 +199,11 @@
           <button class="btn" id="btn-refresh-sessions" style="padding:3px 10px" title="刷新会话列表">🔄</button>
         </div>
         <div class="sub" style="margin:4px 0 0">选择后屏幕只显示该会话的消息（私聊/群聊分开显示，互不混杂）。先保存地址和 API Key 再点 🔄 刷新</div>
+        <div style="margin-top:12px;display:flex;gap:10px;align-items:center">
+          <button class="btn btn-primary" id="btn-test-astrbot" style="padding:6px 16px">🔌 测试连接</button>
+          <span id="astrbot-test-result" style="font-size:13px"></span>
+        </div>
+        <div class="sub" style="margin:8px 0 0">屏幕连接状态：<b id="shell-status" style="color:var(--accent)">检测中…</b></div>
         <div class="sub" style="margin:8px 0 0">助手可以发送三类指令：<b>表情</b>（如开心、难过）、<b>动作</b>（如挥手、点头）、<b>说话</b>（显示文字气泡）</div>
         <div class="sub" style="margin:8px 0 0">详细对接方法请参考说明书中的《智能助手对接指南》</div>
         <div style="margin-top:10px"><button class="btn btn-primary" id="btn-test">发送测试消息</button></div>
@@ -452,6 +457,51 @@ async function refreshSessions() {
   }
 }
 $('btn-refresh-sessions').addEventListener('click', refreshSessions);
+
+// ---------- 测试连接 + 壳状态 ----------
+async function testAstrbot() {
+  const btn = $('btn-test-astrbot');
+  const res = $('astrbot-test-result');
+  btn.disabled = true; res.textContent = '测试中…';
+  try {
+    const r = await fetch(API + '/api/astrbot/test');
+    const d = await r.json();
+    if (d.ok) {
+      res.innerHTML = '✅ 连接正常（' + (d.detail && d.detail.plugin || '插件') + ' 已响应）';
+    } else {
+      res.innerHTML = '❌ ' + (d.error || '连接失败');
+    }
+  } catch (e) {
+    res.textContent = '❌ 测试失败：' + e.message;
+  } finally {
+    btn.disabled = false;
+    setTimeout(() => { res.textContent = ''; }, 10000);
+  }
+}
+async function refreshShellStatus() {
+  const el = $('shell-status');
+  try {
+    const r = await fetch(API + '/api/shell/status');
+    const d = await r.json();
+    if (d.running === false) {
+      el.textContent = '未运行（检查 board-shell 服务）';
+      el.style.color = '#e05c5c';
+    } else if (d.ok) {
+      const ago = Math.round((Date.now() / 1000 - (d.last_poll || 0)));
+      el.textContent = '✅ 已连接 AstrBot · 最近拉取 ' + ago + 's 前' + (d.count ? ' · 最近显示 ' + d.count + ' 条' : '');
+      el.style.color = 'var(--accent)';
+    } else {
+      el.textContent = '⚠️ ' + (d.error || '连接异常');
+      el.style.color = '#e0a050';
+    }
+  } catch (e) {
+    el.textContent = '⚠️ 状态读取失败';
+    el.style.color = '#e0a050';
+  }
+}
+$('btn-test-astrbot').addEventListener('click', testAstrbot);
+refreshShellStatus();
+setInterval(refreshShellStatus, 10000);
 
 // ---------- 信息获取方式 ----------
 ['src-wifi','src-rndis'].forEach(id => {

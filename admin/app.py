@@ -116,7 +116,7 @@ def api_config():
         return jsonify(load_config())
     cfg = load_config()
     data = request.get_json(silent=True) or {}
-    for k in ("showTime", "showDate", "showWeather", "showBubble", "city", "weatherUnit", "model", "zoom", "layout", "bubbleScrollSpeed", "bubblePlaceholder", "infoSource", "bubbleFontSize", "fontColors", "astrbotUrl", "astrbotKey"):
+    for k in ("showTime", "showDate", "showWeather", "showBubble", "city", "weatherUnit", "model", "zoom", "layout", "bubbleScrollSpeed", "bubblePlaceholder", "infoSource", "bubbleFontSize", "fontColors", "astrbotUrl", "astrbotKey", "astrbotSession"):
         if k in data:
             cfg[k] = data[k]
     save_config(cfg)
@@ -307,6 +307,38 @@ def broadcast(msg):
         RECENT_MESSAGES.append(msg)
         if len(RECENT_MESSAGES) > 50:
             RECENT_MESSAGES.pop(0)
+
+
+@app.route("/api/astrbot/test")
+def astrbot_test():
+    """测试 AstrBot 连接：调插件 ping API"""
+    import urllib.request
+
+    cfg = load_config()
+    base = (cfg.get("astrbotUrl") or "").rstrip("/")
+    key = cfg.get("astrbotKey") or ""
+    if not base or not key:
+        return jsonify({"ok": False, "error": "请先填写 AstrBot 地址和 API Key 并保存"})
+    try:
+        req = urllib.request.Request(
+            f"{base}/api/v1/plugins/extensions/live2d-kiosk/ping",
+            headers={"Authorization": f"Bearer {key}"},
+        )
+        with urllib.request.urlopen(req, timeout=8) as r:
+            d = json.loads(r.read().decode("utf-8"))
+            return jsonify({"ok": True, "detail": d})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)[:200]})
+
+
+@app.route("/api/shell/status")
+def shell_status():
+    """板子壳最近状态（/tmp/board_shell.status）"""
+    try:
+        with open("/tmp/board_shell.status", "r") as f:
+            return jsonify(json.load(f))
+    except Exception:
+        return jsonify({"ok": False, "error": "屏幕连接程序未运行", "running": False})
 
 
 @app.route("/api/astrbot/sessions")

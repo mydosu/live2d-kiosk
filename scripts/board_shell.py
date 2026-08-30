@@ -16,7 +16,25 @@ import urllib.request
 CONFIG_PATH = "/opt/dashboard/live2D panel/config.json"
 SEND_URL = "http://localhost:8080/api/send"
 PENDING_PATH = "/api/v1/plugins/extensions/live2d-kiosk/pending"
+STATUS_PATH = "/tmp/board_shell.status"  # 后台「连接状态」读取用
 POLL_INTERVAL = 3  # 秒
+
+
+def write_status(ok_flag: bool, err: str = "", count: int = 0):
+    """写壳状态（后台 /api/shell/status 读取）"""
+    try:
+        with open(STATUS_PATH, "w") as f:
+            json.dump(
+                {
+                    "ok": ok_flag,
+                    "error": err[:200],
+                    "last_poll": time.time(),
+                    "count": count,
+                },
+                f,
+            )
+    except Exception:
+        pass
 
 
 def load_config():
@@ -52,6 +70,7 @@ def poll_once():
     key = cfg.get("astrbotKey") or ""
     if not base or not key:
         print("[shell] 未配置 AstrBot 地址/Key，等待后台填写…", flush=True)
+        write_status(False, "未配置 AstrBot 地址/Key")
         return -1
     target = (cfg.get("astrbotSession") or "").strip()  # 只显示该会话（空 = 全部）
     resp = http_get_json(f"{base}{PENDING_PATH}", key, timeout=8)
@@ -71,6 +90,7 @@ def poll_once():
             post_send({"type": "speak", "text": (m.get("text") or "")[:200]})
             count += 1
     print(f"[shell] 拉取 {len(resp.get('messages', []))} 条（显示 {count} 条）", flush=True)
+    write_status(True, count=count)
     return count
 
 
@@ -80,6 +100,7 @@ def main():
             poll_once()
         except Exception as e:
             print(f"[shell] {str(e)[:120]}", flush=True)
+            write_status(False, str(e))
         time.sleep(POLL_INTERVAL)
 
 
