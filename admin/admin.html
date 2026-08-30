@@ -440,10 +440,10 @@ async function refreshSessions() {
     const cur = sel.value;
     sel.innerHTML = '<option value="">全部会话</option>';
     if (d.ok && d.sessions) {
-      Object.entries(d.sessions).forEach(([origin, info]) => {
+      Object.entries(d.sessions).forEach(([origin]) => {
         const op = document.createElement('option');
         op.value = origin;
-        op.textContent = friendlyOrigin(origin) + (info && info.last_msg ? ' — ' + info.last_msg : '');
+        op.textContent = friendlyOrigin(origin);  // 只显示会话名，不带最近对话内容
         sel.appendChild(op);
       });
     } else if (d.error) {
