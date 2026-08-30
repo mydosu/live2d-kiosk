@@ -120,7 +120,7 @@ def main():
         if not args.kiosk_only:
             deploy_admin(c)
         verify(c)
-        print("\n✅ 部署完成。板子地址：RNDIS 192.168.30.1 / 局域网 192.168.5.32")
+        print("\n✅ 部署完成。板子地址：USB(ICS) 192.168.137.2 / 局域网 192.168.5.32")
     finally:
         c.close()
 
