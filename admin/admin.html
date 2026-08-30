@@ -54,7 +54,11 @@
   input[type=text], input[type=number], input[type=password] { background:rgba(255,255,255,.9); border:1px solid var(--border); color:var(--text); border-radius:11px; padding:8px 11px; font-size:13px; transition:border-color .2s, box-shadow .2s; }
   input[type=text]:focus, input[type=number]:focus, input[type=password]:focus { outline:none; border-color:#ff8fb5; box-shadow:0 0 0 3px rgba(255,111,159,.16); }
   input[type=text] { width:170px; }
-  input[type=number] { width:62px; text-align:center; }
+  input[type=number] { width:80px; text-align:center; }
+  /* 隐藏 number 原生上下箭头（避免遮挡多位数显示；键盘上下键/滚轮仍可微调） */
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
+  input[type=number] { -moz-appearance:textfield; }
   /* select：自定义粉色下拉箭头（原生弹层尽量贴近主题） */
   select { appearance:none; -webkit-appearance:none; background:rgba(255,255,255,.9) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23f44e86' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 12px center; border:1px solid var(--border); color:var(--text); border-radius:11px; padding:8px 32px 8px 11px; font-size:13px; cursor:pointer; transition:border-color .2s, box-shadow .2s; }
   select:focus { outline:none; border-color:#ff8fb5; box-shadow:0 0 0 3px rgba(255,111,159,.16); }
@@ -74,7 +78,7 @@
   .axes span { display:flex; align-items:center; gap:5px; font-size:12px; color:var(--dim); min-width:0; }
   .axes span > label { flex-shrink:0; font-weight:700; color:var(--accent-dark); width:12px; }
   .axes input[type=range] { flex:1; min-width:50px; }
-  .axes input[type=number] { width:58px; flex-shrink:0; }
+  .axes input[type=number] { width:72px; flex-shrink:0; }
   .axes b { color:var(--accent-dark); min-width:26px; text-align:center; font-size:11px; flex-shrink:0; }
 
   /* 滑条统一粉色清新样式（浅色轨道 + 粉色滑块，避免跟随系统深色主题变黑） */
