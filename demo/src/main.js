@@ -286,17 +286,18 @@ function applyBg() {
   }
 }
 
-// 字体风格：艺术字映射（中文字符回落到系统字体，数字/英文用艺术字）
+// 字体风格：艺术字映射（每个风格配对应中文字体——中文不再回落到黑体）
+// 圆润系 → 站酷快乐体（圆润）；优雅系 → 站酷小薇体（宋体优雅）；科技/默认 → 系统黑体
 const FONT_STYLES = {
   default: `'Noto Sans CJK SC', 'Microsoft YaHei', system-ui, sans-serif`,
-  round: `'Comfortaa', 'Noto Sans CJK SC', 'Microsoft YaHei', system-ui, sans-serif`,
-  quicksand: `'Quicksand', 'Noto Sans CJK SC', 'Microsoft YaHei', system-ui, sans-serif`,
-  nunito: `'Nunito', 'Noto Sans CJK SC', 'Microsoft YaHei', system-ui, sans-serif`,
-  baloo: `'Baloo 2', 'Noto Sans CJK SC', 'Microsoft YaHei', system-ui, sans-serif`,
-  fredoka: `'Fredoka', 'Noto Sans CJK SC', 'Microsoft YaHei', system-ui, sans-serif`,
+  round: `'Comfortaa', 'ZCOOL KuaiLe', 'Noto Sans CJK SC', system-ui, sans-serif`,
+  quicksand: `'Quicksand', 'ZCOOL KuaiLe', 'Noto Sans CJK SC', system-ui, sans-serif`,
+  nunito: `'Nunito', 'ZCOOL KuaiLe', 'Noto Sans CJK SC', system-ui, sans-serif`,
+  baloo: `'Baloo 2', 'ZCOOL KuaiLe', 'Noto Sans CJK SC', system-ui, sans-serif`,
+  fredoka: `'Fredoka', 'ZCOOL KuaiLe', 'Noto Sans CJK SC', system-ui, sans-serif`,
   orbitron: `'Orbitron', 'Noto Sans CJK SC', 'Microsoft YaHei', system-ui, sans-serif`,
-  serif: `'Playfair Display', 'Noto Sans CJK SC', Georgia, serif`,
-  cnround: `'ZCOOL KuaiLe', 'Noto Sans CJK SC', 'Microsoft YaHei', system-ui, sans-serif`, // 中文圆体（含中文字形）
+  serif: `'Playfair Display', 'ZCOOL XiaoWei', 'Noto Sans CJK SC', Georgia, serif`,
+  cnround: `'ZCOOL KuaiLe', 'Noto Sans CJK SC', 'Microsoft YaHei', system-ui, sans-serif`, // 中文圆体（全中文）
 }
 function applyFont() {
   const fs = CONFIG.fontStyles || {}
