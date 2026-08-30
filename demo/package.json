@@ -12,6 +12,9 @@
     "verify": "node scripts/verify.mjs"
   },
   "dependencies": {
+    "@fontsource/comfortaa": "^5.3.0",
+    "@fontsource/orbitron": "^5.3.0",
+    "@fontsource/playfair-display": "^5.3.0",
     "easy-live2d": "^0.4.4",
     "pixi.js": "^8.19.0"
   },

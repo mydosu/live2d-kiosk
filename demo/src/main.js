@@ -7,6 +7,11 @@
  */
 import { Application, Ticker } from 'pixi.js'
 import { Config, Live2DSprite, LogLevel, Priority } from 'easy-live2d'
+// 艺术字字体（构建时打包进 dist，板子本地加载无网络依赖）
+import '@fontsource/comfortaa/400.css'
+import '@fontsource/comfortaa/700.css'
+import '@fontsource/orbitron/500.css'
+import '@fontsource/playfair-display/600.css'
 
 /* ---------------- 全局配置 ---------------- */
 Config.MotionGroupIdle = 'Idle' // 待机动作组
@@ -67,7 +72,9 @@ let CONFIG = {
   bubblePlaceholder: '等待 agent 消息…', // 气泡空消息占位文本
   bubbleFontSize: 14, // 气泡字体大小基准（px，长消息自动缩小）
   fontColors: { time: '#ffffff', date: '#9a9ab0', weather: '#ffffff', bubble: '#e8e8f2' }, // 各模块字体颜色
+  bubbleBgColor: '#7c5cff', // 气泡背景色（半透明磨砂渐变基色）
   bgTheme: 'aurora', // 屏幕背景主题：aurora(极光) | pink(粉嫩) | dark(深色) | mint(薄荷) | sunset(日落)
+  fontStyle: 'default', // 字体风格：default(默认) | round(圆润) | orbitron(科技) | serif(优雅)
   showDate: true, // 显示日期/星期
   infoSource: 'wifi', // 时间/天气信息来源：wifi(网络获取) | rndis(用户电脑推送)
   // 模块自由排版：每个模块相对默认位置的像素偏移 + 缩放
@@ -244,6 +251,8 @@ function applyDisplayConfig() {
   if (fc.bubble) chatBubble.style.color = fc.bubble
   applyLayout()
   applyBg()
+  applyBubbleBg()
+  applyFont()
   // 缩放/布局配置变化时重新适配模型（模型不变则不重载）
   if (sprite) fitSprite(sprite, realModelSize)
 }
@@ -271,6 +280,37 @@ function applyBg() {
   } else {
     el.style.background = BG_THEMES[CONFIG.bgTheme] || BG_THEMES.aurora
   }
+}
+
+// 字体风格：艺术字映射（中文字符回落到系统字体，数字/英文用艺术字）
+const FONT_STYLES = {
+  default: `'Noto Sans CJK SC', 'Microsoft YaHei', system-ui, sans-serif`,
+  round: `'Comfortaa', 'Noto Sans CJK SC', 'Microsoft YaHei', system-ui, sans-serif`,
+  orbitron: `'Orbitron', 'Noto Sans CJK SC', 'Microsoft YaHei', system-ui, sans-serif`,
+  serif: `'Playfair Display', 'Noto Sans CJK SC', Georgia, serif`,
+}
+function applyFont() {
+  const f = FONT_STYLES[CONFIG.fontStyle] || FONT_STYLES.default
+  document.body.style.fontFamily = f
+  // 时间/日期/天气/气泡继承 body 字体（无需逐元素设置）
+  if (timeDisplay) timeDisplay.style.fontFamily = f
+  if (dateDisplay) dateDisplay.style.fontFamily = f
+  if (weatherDisplay) weatherDisplay.style.fontFamily = f
+  if (chatBubble) chatBubble.style.fontFamily = f
+}
+
+// 气泡背景：用户色 → 半透明磨砂渐变（与主体背景不冲突）
+function hexToRgba(hex, a) {
+  const h = hex.replace('#', '')
+  const n = parseInt(h.length === 3 ? h.split('').map(c => c + c).join('') : h, 16)
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`
+}
+function applyBubbleBg() {
+  const c = CONFIG.bubbleBgColor || '#7c5cff'
+  chatBubble.style.background = `linear-gradient(135deg, ${hexToRgba(c, 0.88)} 0%, ${hexToRgba(c, 0.55)} 60%, ${hexToRgba(c, 0.35)} 100%)`
+  chatBubble.style.backdropFilter = 'blur(8px)'
+  chatBubble.style.webkitBackdropFilter = 'blur(8px)'
+  chatBubble.style.borderColor = hexToRgba(c, 0.45)
 }
 
 // 模块自由排版：按 layout 配置设置每个模块的偏移与缩放（transform）
