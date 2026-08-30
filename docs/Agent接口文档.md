@@ -31,7 +31,7 @@
 **板子地址**：
 | 场景 | 地址 |
 |---|---|
-| USB 连接（RNDIS） | `192.168.30.1` |
+| USB 连接（RNDIS） | `192.168.137.2` |
 | 局域网（WiFi/开发） | `192.168.5.32`（DHCP，可能变化） |
 | 域名 | `orange.hyperlands.cloud` |
 
@@ -54,12 +54,12 @@
 
 ```bash
 # 方式 A：HTTP POST（推荐，最简单）
-curl -X POST http://192.168.30.1:8080/api/send \
+curl -X POST http://192.168.137.2:8080/api/send \
   -H "Content-Type: application/json" \
   -d '{"type":"emotion","value":"F01"}'
 
 # 方式 B：WebSocket 直连（适合高频/双向场景）
-websocat ws://192.168.30.1:9000/ws
+websocat ws://192.168.137.2:9000/ws
 > {"type":"action","value":"tapbody_0"}
 ```
 
@@ -184,7 +184,7 @@ HTTP 返回 `{"ok": true}` 表示已接收并转发。
 import json
 import requests
 
-BOARD = "http://192.168.30.1:8080"   # 板子地址（USB 直连 / WiFi）
+BOARD = "http://192.168.137.2:8080"   # 板子地址（USB 直连 / WiFi）
 
 EMOTION_MAP = {   # 情感 → 表情代号（Haru 模型）
     "happy":  "F01",
@@ -219,7 +219,7 @@ def express(mood: str, text: str = None):
 |---|---|
 | 管理后台"🔌 Agent 对接"卡片 | 输入 JSON 直接发送测试 |
 | curl | 见第 2 节示例 |
-| websocat | `websocat ws://192.168.30.1:9000/ws` 交互测试 |
+| websocat | `websocat ws://192.168.137.2:9000/ws` 交互测试 |
 | 页面日志 | 板子 `grep '\[agent\]' /tmp/kiosk-chromium.log` 查看表情/动作是否命中 |
 | 查询模型可用表情 | 板子读模型 `model3.json` 的 `FileReferences.Expressions` |
 

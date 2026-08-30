@@ -39,7 +39,7 @@ systemctl status live2d-admin  # 管理后台 :8080 + WebSocket :9000
 systemctl status live2d-kiosk  # Xorg + openbox + Chromium 全屏
 ```
 
-管理后台：`http://<板子IP>:8080`（USB 连接为 `http://192.168.30.1:8080`）。
+管理后台：`http://<板子IP>:8080`（USB 连接为 `http://192.168.137.2:8080`）。
 
 ## 架构
 

@@ -191,11 +191,9 @@
       <div class="card">
         <h2>🤝 智能助手连接</h2>
         <div class="sub" style="margin:0 0 10px">连接智能助手（如各类 AI 聊天机器人）后，助手可以控制屏幕上的角色——做表情、做动作、说话，就像真正的桌面伙伴一样。</div>
-        <div class="row"><span>连接端口 <b id="wsport-val" style="color:var(--accent)">9000</b></span>
-          <input type="number" id="inp-wsport" min="1" max="65535" />
-        </div>
-        <div class="sub" style="margin:6px 0 0">实时通道：<b id="ws-addr">ws://192.168.30.1:9000/ws</b></div>
-        <div class="sub" style="margin:4px 0 0">⚠️ 修改端口后需<b>重启设备</b>才能生效</div>
+        <div class="row" style="margin-top:12px"><span>AstrBot 地址</span><input type="text" id="inp-astrbot-url" placeholder="http://192.168.5.6:6185 或 https://你的域名" /></div>
+        <div class="row"><span>AstrBot API Key</span><input type="password" id="inp-astrbot-key" placeholder="粘贴 API Key（AstrBot 设置 → API Key 创建）" /></div>
+        <div class="sub" style="margin:6px 0 0">屏幕会主动连接 AstrBot 拉取消息（表情/动作/对话气泡），无需开放板子端口。API Key 在 AstrBot WebUI「设置 → API Key」创建，勾选 <b>plugin / chat / file</b> 三个权限</div>
         <div class="sub" style="margin:8px 0 0">助手可以发送三类指令：<b>表情</b>（如开心、难过）、<b>动作</b>（如挥手、点头）、<b>说话</b>（显示文字气泡）</div>
         <div class="sub" style="margin:8px 0 0">详细对接方法请参考说明书中的《智能助手对接指南》</div>
         <div style="margin-top:10px"><button class="btn btn-primary" id="btn-test">发送测试消息</button></div>
@@ -271,7 +269,7 @@ document.querySelectorAll('.btn-save').forEach(b => {
     if (card === 'src') saveCard('src', ['infoSource']);
     else if (card === 'display') saveCard('display', ['showTime','showDate','showWeather','showBubble','bubblePlaceholder','bubbleScrollSpeed','bubbleFontSize','fontColors','city','weatherUnit']);
     else if (card === 'layout') saveCard('layout', ['layout']);
-    else if (card === 'agent') saveCard('agent', ['wsPort']);
+    else if (card === 'agent') saveCard('agent', ['astrbotUrl','astrbotKey']);
   });
 });
 
@@ -321,9 +319,8 @@ function render() {
   $('src-rndis').checked = src === 'rndis';
   $('wifi-box').style.display = src === 'wifi' ? '' : 'none';
   if (src === 'wifi') refreshWifiStatus();
-  $('inp-wsport').value = config.wsPort || 9000;
-  $('wsport-val').textContent = config.wsPort || 9000;
-  $('ws-addr').textContent = 'ws://' + location.hostname + ':' + (config.wsPort || 9000) + '/ws';
+  $('inp-astrbot-url').value = config.astrbotUrl || '';
+  $('inp-astrbot-key').value = config.astrbotKey || '';
   // 布局滑条（含数值输入）
   const lay = config.layout || {};
   ['time','date','weather','bubble','model'].forEach(m => {
@@ -403,14 +400,12 @@ bindPair('rng-fontsize', 'num-fontsize', (v) => {
   });
 });
 
-// ---------- WebSocket 端口 ----------
-$('inp-wsport').addEventListener('change', (e) => {
-  const port = parseInt(e.target.value, 10);
-  if (!port || port < 1 || port > 65535) { toast('端口无效'); e.target.value = config.wsPort || 9000; return; }
-  draft.wsPort = port;
-  $('wsport-val').textContent = port;
-  $('ws-addr').textContent = 'ws://' + location.hostname + ':' + port + '/ws';
-  markDirty('agent');
+// ---------- AstrBot 连接 ----------
+['inp-astrbot-url','inp-astrbot-key'].forEach(id => {
+  $(id).addEventListener('change', (e) => {
+    draft[id === 'inp-astrbot-url' ? 'astrbotUrl' : 'astrbotKey'] = e.target.value.trim();
+    markDirty('agent');
+  });
 });
 
 // ---------- 信息获取方式 ----------

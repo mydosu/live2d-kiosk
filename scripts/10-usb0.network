@@ -2,4 +2,7 @@
 Name=usb0
 
 [Network]
-Address=192.168.30.1/24
+# ICS 网段：板子 137.2，网关 137.1 = Windows ICS（板子经 Windows 出网）
+Address=192.168.137.2/24
+Gateway=192.168.137.1
+DNS=192.168.137.1

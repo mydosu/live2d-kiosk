@@ -68,7 +68,6 @@ let CONFIG = {
   fontColors: { time: '#ffffff', date: '#9a9ab0', weather: '#ffffff', bubble: '#e8e8f2' }, // 各模块字体颜色
   showDate: true, // 显示日期/星期
   infoSource: 'wifi', // 时间/天气信息来源：wifi(网络获取) | rndis(用户电脑推送)
-  wsPort: 9000, // websocket 实时通道端口（管理后台可改）
   // 模块自由排版：每个模块相对默认位置的像素偏移 + 缩放
   layout: {
     time: { x: 0, y: 0, scale: 1 },
@@ -259,29 +258,17 @@ function applyLayout() {
   set('chat-bubble', 'bubble')
 }
 
-/* ---------------- WebSocket（连管理后台 :9000，收 agent 控制消息） ---------------- */
-function initWS() {
-  const proto = location.protocol === 'https:' ? 'wss' : 'ws'
-  const host = location.hostname || 'localhost'
-  let ws
-  const connect = () => {
+/* ---------------- 消息轮询（去 ws：GET /api/poll 拉取控制消息） ---------------- */
+function initPoll() {
+  const poll = async () => {
     try {
-      // 端口来自管理后台配置（wsPort，默认 9000）；重连时读最新配置
-      const port = Number(CONFIG.wsPort) || 9000
-      ws = new WebSocket(`${proto}://${host}:${port}/ws`)
-    } catch {
-      return setTimeout(connect, 5000)
-    }
-    ws.onopen = () => console.log('[ws] connected')
-    ws.onmessage = (e) => {
-      try {
-        handleWSMessage(JSON.parse(e.data))
-      } catch { /* ignore */ }
-    }
-    ws.onclose = () => setTimeout(connect, 5000)
-    ws.onerror = () => ws.close()
+      const r = await fetch(`${API_BASE}/api/poll`)
+      const data = await r.json()
+      ;(data.messages || []).forEach(handleWSMessage)
+    } catch { /* ignore */ }
   }
-  connect()
+  poll()
+  setInterval(poll, 2000) // 2s 轮询（轻量，不影响渲染帧率）
 }
 
 function handleWSMessage(msg) {
@@ -793,7 +780,7 @@ if (IS_KIOSK) {
   controls.classList.add('hide-hud')
   topbar.classList.add('hide-hud')
 }
-initWS() // 连接管理后台实时通道（agent 控制）
+initPoll() // 轮询管理后台消息（agent 控制）
 fetchConfig() // 读取显示开关/城市/模型
   .then(fetchModels)
   .then(() => initApp())

@@ -2,7 +2,7 @@
 """
 Live2D Kiosk 管理后台
 - Flask :8080 —— 管理页 / API（模型上传/切换、显示开关、关机、消息转发）
-- websockets :9000 —— 页面实时通道（页面连 /ws 收控制消息；agent 可连 /ws 或 POST /api/send）
+- 消息链路（去 ws）：/api/send 写入轮询队列 → 页面 GET /api/poll 拉取显示
 配置存储：/opt/dashboard/live2D panel/config.json
 """
 import json
@@ -13,7 +13,6 @@ import threading
 import zipfile
 import copy
 
-import websockets
 from flask import Flask, jsonify, request, send_from_directory
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # /opt/dashboard/admin
@@ -38,7 +37,8 @@ DEFAULT_CONFIG = {
     "bubbleFontSize": 14,
     "fontColors": {"time": "#ffffff", "date": "#9a9ab0", "weather": "#ffffff", "bubble": "#e8e8f2"},
     "infoSource": "wifi",  # 时间/天气信息来源：wifi(网络获取) | rndis(用户电脑推送)
-    "wsPort": 9000,  # websocket 实时通道端口（改后需重启 live2d-admin 生效）
+    "astrbotUrl": "",  # AstrBot 主机地址（板子壳连接用）：局域网如 http://192.168.5.6:6185，或 DDNS 域名
+    "astrbotKey": "",  # AstrBot API Key（WebUI 设置→API Key 创建，勾选 plugin/chat/file scope）
     "layout": {
         "time": {"x": 0, "y": 0, "scale": 1},
         "date": {"x": 0, "y": 0, "scale": 1},
@@ -87,85 +87,9 @@ def scan_models():
     return models
 
 
-# ---------- websocket 广播 ----------
-clients = set()  # 页面 ws 连接
-_ws_loop = None  # ws 线程的事件循环
-_send_queue = None  # asyncio.Queue：Flask 线程 → ws 线程
-
-
-def ws_thread():
-    global _ws_loop, _send_queue
-    import asyncio
-
-    print("[ws] thread started", flush=True)
-    _ws_loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(_ws_loop)
-    _send_queue = asyncio.Queue()
-
-    async def handler(ws):
-        print("[ws] client connected", flush=True)
-        clients.add(ws)
-        try:
-            # 连接即推送初始配置与模型列表
-            await ws.send(
-                json.dumps(
-                    {
-                        "type": "init",
-                        "models": scan_models(),
-                        "config": load_config(),
-                    }
-                )
-            )
-            async for raw in ws:
-                try:
-                    msg = json.loads(raw)
-                except Exception:
-                    continue
-                # agent/页面消息：转发给其他连接
-                for c in list(clients):
-                    if c is not ws:
-                        try:
-                            await c.send(json.dumps(msg))
-                        except Exception:
-                            pass
-        except Exception:
-            pass
-        finally:
-            clients.discard(ws)
-
-    async def relay():
-        # 注意：必须用 asyncio.Queue —— queue.Queue.get(timeout) 是同步阻塞，
-        # 在事件循环里每 1 秒卡死整个循环，导致 ws 握手永远无法完成
-        while True:
-            msg = await _send_queue.get()
-            dead = []
-            for c in list(clients):
-                try:
-                    await c.send(json.dumps(msg))
-                except Exception:
-                    dead.append(c)
-            for c in dead:
-                clients.discard(c)
-
-    async def main():
-        # 注意：websockets v15 的 serve() 端口绑定在 `async with` 进入时发生，
-        # 不能只用 await gather(serve(...))（那样不绑定端口）
-        ws_port = int(load_config().get("wsPort", 9000) or 9000)
-        async with websockets.serve(
-            handler, "0.0.0.0", ws_port, max_size=10 * 1024 * 1024
-        ):
-            print(f"[ws] serving on {ws_port}", flush=True)
-            await relay()
-
-    try:
-        _ws_loop.run_until_complete(main())
-    except Exception:
-        import traceback
-
-        traceback.print_exc()
-
-
-threading.Thread(target=ws_thread, daemon=True).start()
+# ---------- 消息队列（去 ws，页面轮询拉取） ----------
+RECENT_MESSAGES = []  # 最近消息（页面 GET /api/poll 拉取后清空）
+_RECENT_LOCK = threading.Lock()
 
 
 # ---------- Flask ----------
@@ -191,7 +115,7 @@ def api_config():
         return jsonify(load_config())
     cfg = load_config()
     data = request.get_json(silent=True) or {}
-    for k in ("showTime", "showDate", "showWeather", "showBubble", "city", "weatherUnit", "model", "zoom", "layout", "bubbleScrollSpeed", "bubblePlaceholder", "infoSource", "wsPort", "bubbleFontSize", "fontColors"):
+    for k in ("showTime", "showDate", "showWeather", "showBubble", "city", "weatherUnit", "model", "zoom", "layout", "bubbleScrollSpeed", "bubblePlaceholder", "infoSource", "bubbleFontSize", "fontColors", "astrbotUrl", "astrbotKey"):
         if k in data:
             cfg[k] = data[k]
     save_config(cfg)
@@ -377,11 +301,20 @@ def api_reboot():
 
 
 def broadcast(msg):
-    """Flask 线程 → ws 线程（跨线程投递到事件循环）"""
-    if _send_queue is not None and _ws_loop is not None:
-        import asyncio
+    """消息写入轮询队列（页面定时 GET /api/poll 拉取）"""
+    with _RECENT_LOCK:
+        RECENT_MESSAGES.append(msg)
+        if len(RECENT_MESSAGES) > 50:
+            RECENT_MESSAGES.pop(0)
 
-        asyncio.run_coroutine_threadsafe(_send_queue.put(msg), _ws_loop)
+
+@app.route("/api/poll")
+def api_poll():
+    """页面轮询：拉取最近消息并清空"""
+    with _RECENT_LOCK:
+        msgs = list(RECENT_MESSAGES)
+        RECENT_MESSAGES.clear()
+    return jsonify({"messages": msgs})
 
 
 if __name__ == "__main__":

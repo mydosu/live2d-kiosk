@@ -1,0 +1,12 @@
+[Unit]
+Description=Live2D board shell (poll AstrBot queue -> screen)
+After=live2d-admin.service network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/bin/python3 /opt/dashboard/board_shell.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
