@@ -450,7 +450,7 @@ async function refreshSessions() {
     const r = await fetch(API + '/api/astrbot/sessions');
     const d = await r.json();
     const sel = $('sel-session');
-    const cur = sel.value;
+    const cur = sel.value || (config.astrbotSession || '');  // render 时 option 未加载则用 config 兜底
     sel.innerHTML = '<option value="">全部会话</option>';
     if (d.ok && d.sessions) {
       Object.entries(d.sessions).forEach(([origin]) => {
@@ -461,6 +461,13 @@ async function refreshSessions() {
       });
     } else if (d.error) {
       toast('拉取失败：' + d.error);
+    }
+    // 兜底：已保存的会话不在列表（如插件刚重启 sessions 内存清空）也显示，避免误选"全部"
+    if (cur && ![...sel.options].some(o => o.value === cur)) {
+      const op = document.createElement('option');
+      op.value = cur;
+      op.textContent = friendlyOrigin(cur) + '（已保存）';
+      sel.appendChild(op);
     }
     sel.value = cur;
   } catch (e) {
