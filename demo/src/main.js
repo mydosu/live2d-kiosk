@@ -12,6 +12,10 @@ import '@fontsource/comfortaa/400.css'
 import '@fontsource/comfortaa/700.css'
 import '@fontsource/orbitron/500.css'
 import '@fontsource/playfair-display/600.css'
+import '@fontsource/quicksand/500.css'
+import '@fontsource/nunito/600.css'
+import '@fontsource/baloo-2/600.css'
+import '@fontsource/fredoka/500.css'
 
 /* ---------------- 全局配置 ---------------- */
 Config.MotionGroupIdle = 'Idle' // 待机动作组
@@ -74,7 +78,7 @@ let CONFIG = {
   fontColors: { time: '#ffffff', date: '#9a9ab0', weather: '#ffffff', bubble: '#e8e8f2' }, // 各模块字体颜色
   bubbleBgColor: '#7c5cff', // 气泡背景色（半透明磨砂渐变基色）
   bgTheme: 'aurora', // 屏幕背景主题：aurora(极光) | pink(粉嫩) | dark(深色) | mint(薄荷) | sunset(日落)
-  fontStyle: 'default', // 字体风格：default(默认) | round(圆润) | orbitron(科技) | serif(优雅)
+  fontStyles: { time: 'default', date: 'default', weather: 'default', bubble: 'default' }, // 各模块字体风格（每模块独立选择）
   showDate: true, // 显示日期/星期
   infoSource: 'wifi', // 时间/天气信息来源：wifi(网络获取) | rndis(用户电脑推送)
   // 模块自由排版：每个模块相对默认位置的像素偏移 + 缩放
@@ -286,17 +290,21 @@ function applyBg() {
 const FONT_STYLES = {
   default: `'Noto Sans CJK SC', 'Microsoft YaHei', system-ui, sans-serif`,
   round: `'Comfortaa', 'Noto Sans CJK SC', 'Microsoft YaHei', system-ui, sans-serif`,
+  quicksand: `'Quicksand', 'Noto Sans CJK SC', 'Microsoft YaHei', system-ui, sans-serif`,
+  nunito: `'Nunito', 'Noto Sans CJK SC', 'Microsoft YaHei', system-ui, sans-serif`,
+  baloo: `'Baloo 2', 'Noto Sans CJK SC', 'Microsoft YaHei', system-ui, sans-serif`,
+  fredoka: `'Fredoka', 'Noto Sans CJK SC', 'Microsoft YaHei', system-ui, sans-serif`,
   orbitron: `'Orbitron', 'Noto Sans CJK SC', 'Microsoft YaHei', system-ui, sans-serif`,
   serif: `'Playfair Display', 'Noto Sans CJK SC', Georgia, serif`,
 }
 function applyFont() {
-  const f = FONT_STYLES[CONFIG.fontStyle] || FONT_STYLES.default
-  document.body.style.fontFamily = f
-  // 时间/日期/天气/气泡继承 body 字体（无需逐元素设置）
-  if (timeDisplay) timeDisplay.style.fontFamily = f
-  if (dateDisplay) dateDisplay.style.fontFamily = f
-  if (weatherDisplay) weatherDisplay.style.fontFamily = f
-  if (chatBubble) chatBubble.style.fontFamily = f
+  const fs = CONFIG.fontStyles || {}
+  const pick = (k) => FONT_STYLES[fs[k]] || FONT_STYLES.default
+  document.body.style.fontFamily = pick('time')
+  if (timeDisplay) timeDisplay.style.fontFamily = pick('time')
+  if (dateDisplay) dateDisplay.style.fontFamily = pick('date')
+  if (weatherDisplay) weatherDisplay.style.fontFamily = pick('weather')
+  if (chatBubble) chatBubble.style.fontFamily = pick('bubble')
 }
 
 // 气泡背景：用户色 → 半透明磨砂渐变（与主体背景不冲突）

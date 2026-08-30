@@ -218,10 +218,15 @@
           </div>
           <div style="margin-top:4px">拖动裁剪框调整取景区域（比例已按屏幕适配），确认后应用为背景</div>
         </div>
-        <div class="row"><span>字体风格</span>
-          <select id="sel-font"><option value="default">默认</option><option value="round">圆润（Comfortaa）</option><option value="orbitron">科技（Orbitron）</option><option value="serif">优雅（Playfair）</option></select>
+        <div class="row"><span>字体风格（每模块）</span>
+          <div style="display:flex;flex-direction:column;gap:6px;flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:8px"><b style="font-size:12px;color:var(--dim);width:34px">时间</b><select id="sel-font-time" style="flex:1;min-width:0"><option value="default">默认</option><option value="round">圆润 Comfortaa</option><option value="quicksand">柔和 Quicksand</option><option value="nunito">圆体 Nunito</option><option value="baloo">卡通 Baloo 2</option><option value="fredoka">果冻 Fredoka</option><option value="orbitron">科技 Orbitron</option><option value="serif">优雅 Playfair</option></select></div>
+            <div style="display:flex;align-items:center;gap:8px"><b style="font-size:12px;color:var(--dim);width:34px">日期</b><select id="sel-font-date" style="flex:1;min-width:0"><option value="default">默认</option><option value="round">圆润 Comfortaa</option><option value="quicksand">柔和 Quicksand</option><option value="nunito">圆体 Nunito</option><option value="baloo">卡通 Baloo 2</option><option value="fredoka">果冻 Fredoka</option><option value="orbitron">科技 Orbitron</option><option value="serif">优雅 Playfair</option></select></div>
+            <div style="display:flex;align-items:center;gap:8px"><b style="font-size:12px;color:var(--dim);width:34px">天气</b><select id="sel-font-weather" style="flex:1;min-width:0"><option value="default">默认</option><option value="round">圆润 Comfortaa</option><option value="quicksand">柔和 Quicksand</option><option value="nunito">圆体 Nunito</option><option value="baloo">卡通 Baloo 2</option><option value="fredoka">果冻 Fredoka</option><option value="orbitron">科技 Orbitron</option><option value="serif">优雅 Playfair</option></select></div>
+            <div style="display:flex;align-items:center;gap:8px"><b style="font-size:12px;color:var(--dim);width:34px">气泡</b><select id="sel-font-bubble" style="flex:1;min-width:0"><option value="default">默认</option><option value="round">圆润 Comfortaa</option><option value="quicksand">柔和 Quicksand</option><option value="nunito">圆体 Nunito</option><option value="baloo">卡通 Baloo 2</option><option value="fredoka">果冻 Fredoka</option><option value="orbitron">科技 Orbitron</option><option value="serif">优雅 Playfair</option></select></div>
+          </div>
         </div>
-        <div class="sub" style="margin:0">艺术字应用于时间/日期/天气/气泡的英文与数字（中文自动回落到系统字体）</div>
+        <div class="sub" style="margin:0">每个模块独立选择艺术字（英文/数字用艺术字，中文自动回落到系统字体）</div>
         <div class="row" style="justify-content:flex-start;gap:14px"><span style="margin-right:auto">字体颜色</span>
           <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)">时间<input type="color" id="col-time" value="#ffffff" style="width:34px;height:26px;border:none;padding:0;background:none;cursor:pointer" /></label>
           <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)">日期<input type="color" id="col-date" value="#9a9ab0" style="width:34px;height:26px;border:none;padding:0;background:none;cursor:pointer" /></label>
@@ -350,7 +355,7 @@ document.querySelectorAll('.btn-save').forEach(b => {
   b.addEventListener('click', () => {
     const card = b.dataset.card;
     if (card === 'src') saveCard('src', ['infoSource']);
-    else if (card === 'display') saveCard('display', ['showTime','showDate','showWeather','showBubble','bubblePlaceholder','bubbleScrollSpeed','bubbleHold','bubbleFontSize','fontColors','bubbleBgColor','bgTheme','fontStyle','city','weatherUnit']);
+    else if (card === 'display') saveCard('display', ['showTime','showDate','showWeather','showBubble','bubblePlaceholder','bubbleScrollSpeed','bubbleHold','bubbleFontSize','fontColors','bubbleBgColor','bgTheme','fontStyles','city','weatherUnit']);
     else if (card === 'layout') saveCard('layout', ['layout']);
     else if (card === 'agent') saveCard('agent', ['astrbotUrl','astrbotKey','astrbotSession']);
   });
@@ -483,7 +488,8 @@ function render() {
   $('col-weather').value = fc.weather || '#ffffff';
   $('col-bubble').value = fc.bubble || '#e8e8f2';
   $('col-bubble-bg').value = config.bubbleBgColor || '#7c5cff';
-  $('sel-font').value = config.fontStyle || 'default';
+  const fs = config.fontStyles || {};
+  ['time','date','weather','bubble'].forEach(k => { $('sel-font-' + k).value = fs[k] || 'default'; });
   // 背景主题选中态
   document.querySelectorAll('.bg-chip').forEach(b => b.classList.toggle('active', b.dataset.theme === (config.bgTheme || 'aurora')));
   renderBgImage();
@@ -584,10 +590,12 @@ $('col-bubble-bg').addEventListener('input', (e) => {
   draft.bubbleBgColor = e.target.value;
   markDirty('display');
 });
-// 字体风格
-$('sel-font').addEventListener('change', (e) => {
-  draft.fontStyle = e.target.value;
-  markDirty('display');
+// 字体风格（每模块）
+['time','date','weather','bubble'].forEach(k => {
+  $('sel-font-' + k).addEventListener('change', (e) => {
+    draft.fontStyles = { ...(draft.fontStyles || config.fontStyles || {}), [k]: e.target.value };
+    markDirty('display');
+  });
 });
 
 // 屏幕背景主题选择
