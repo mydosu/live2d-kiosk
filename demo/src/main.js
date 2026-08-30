@@ -296,6 +296,7 @@ const FONT_STYLES = {
   fredoka: `'Fredoka', 'Noto Sans CJK SC', 'Microsoft YaHei', system-ui, sans-serif`,
   orbitron: `'Orbitron', 'Noto Sans CJK SC', 'Microsoft YaHei', system-ui, sans-serif`,
   serif: `'Playfair Display', 'Noto Sans CJK SC', Georgia, serif`,
+  cnround: `'ZCOOL KuaiLe', 'Noto Sans CJK SC', 'Microsoft YaHei', system-ui, sans-serif`, // 中文圆体（含中文字形）
 }
 function applyFont() {
   const fs = CONFIG.fontStyles || {}
