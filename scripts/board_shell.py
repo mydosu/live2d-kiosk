@@ -46,16 +46,20 @@ def post_send(payload):
 
 
 def poll_once():
-    """单轮：拉取队列并分发到屏幕。返回处理消息数（未配置返回 -1）。"""
+    """单轮：拉取队列并按配置会话过滤后分发到屏幕。返回处理消息数（未配置返回 -1）。"""
     cfg = load_config()
     base = (cfg.get("astrbotUrl") or "").rstrip("/")
     key = cfg.get("astrbotKey") or ""
     if not base or not key:
         print("[shell] 未配置 AstrBot 地址/Key，等待后台填写…", flush=True)
         return -1
+    target = (cfg.get("astrbotSession") or "").strip()  # 只显示该会话（空 = 全部）
     resp = http_get_json(f"{base}{PENDING_PATH}", key, timeout=8)
     count = 0
     for m in resp.get("messages", []):
+        origin = m.get("origin") or ""
+        if target and origin and origin != target:
+            continue  # 非选中会话的消息跳过
         t = m.get("type")
         if t == "emotion":
             post_send({"type": "emotion", "value": m.get("value", "F01")})
@@ -66,7 +70,7 @@ def poll_once():
         elif t == "speak":
             post_send({"type": "speak", "text": (m.get("text") or "")[:200]})
             count += 1
-    print(f"[shell] 拉取 {count} 条消息", flush=True)
+    print(f"[shell] 拉取 {len(resp.get('messages', []))} 条（显示 {count} 条）", flush=True)
     return count
 
 

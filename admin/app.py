@@ -39,6 +39,7 @@ DEFAULT_CONFIG = {
     "infoSource": "wifi",  # 时间/天气信息来源：wifi(网络获取) | rndis(用户电脑推送)
     "astrbotUrl": "",  # AstrBot 主机地址（板子壳连接用）：局域网如 http://192.168.5.6:6185，或 DDNS 域名
     "astrbotKey": "",  # AstrBot API Key（WebUI 设置→API Key 创建，勾选 plugin/chat/file scope）
+    "astrbotSession": "",  # 显示指定会话的消息（空 = 全部；后台「智能助手」页下拉选择）
     "layout": {
         "time": {"x": 0, "y": 0, "scale": 1},
         "date": {"x": 0, "y": 0, "scale": 1},
@@ -306,6 +307,27 @@ def broadcast(msg):
         RECENT_MESSAGES.append(msg)
         if len(RECENT_MESSAGES) > 50:
             RECENT_MESSAGES.pop(0)
+
+
+@app.route("/api/astrbot/sessions")
+def astrbot_sessions():
+    """代理：拉取 AstrBot 插件活跃会话列表（后台下拉切换显示会话用）"""
+    import urllib.request
+
+    cfg = load_config()
+    base = (cfg.get("astrbotUrl") or "").rstrip("/")
+    key = cfg.get("astrbotKey") or ""
+    if not base or not key:
+        return jsonify({"ok": False, "error": "未配置 AstrBot 地址/Key", "sessions": {}})
+    try:
+        req = urllib.request.Request(
+            f"{base}/api/v1/plugins/extensions/live2d-kiosk/sessions",
+            headers={"Authorization": f"Bearer {key}"},
+        )
+        with urllib.request.urlopen(req, timeout=8) as r:
+            return jsonify(json.loads(r.read().decode("utf-8")))
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e), "sessions": {}})
 
 
 @app.route("/api/poll")

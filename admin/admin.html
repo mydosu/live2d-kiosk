@@ -194,6 +194,11 @@
         <div class="row" style="margin-top:12px"><span>AstrBot 地址</span><input type="text" id="inp-astrbot-url" placeholder="http://192.168.5.6:6185 或 https://你的域名" /></div>
         <div class="row"><span>AstrBot API Key</span><input type="password" id="inp-astrbot-key" placeholder="粘贴 API Key（AstrBot 设置 → API Key 创建）" /></div>
         <div class="sub" style="margin:6px 0 0">屏幕会主动连接 AstrBot 拉取消息（表情/动作/对话气泡），无需开放板子端口。API Key 在 AstrBot WebUI「设置 → API Key」创建，勾选 <b>plugin / chat / file</b> 三个权限</div>
+        <div class="row" style="margin-top:12px"><span>显示会话</span>
+          <select id="sel-session" style="flex:1;min-width:0"><option value="">全部会话</option></select>
+          <button class="btn" id="btn-refresh-sessions" style="padding:3px 10px" title="刷新会话列表">🔄</button>
+        </div>
+        <div class="sub" style="margin:4px 0 0">选择后屏幕只显示该会话的消息（私聊/群聊分开显示，互不混杂）。先保存地址和 API Key 再点 🔄 刷新</div>
         <div class="sub" style="margin:8px 0 0">助手可以发送三类指令：<b>表情</b>（如开心、难过）、<b>动作</b>（如挥手、点头）、<b>说话</b>（显示文字气泡）</div>
         <div class="sub" style="margin:8px 0 0">详细对接方法请参考说明书中的《智能助手对接指南》</div>
         <div style="margin-top:10px"><button class="btn btn-primary" id="btn-test">发送测试消息</button></div>
@@ -269,7 +274,7 @@ document.querySelectorAll('.btn-save').forEach(b => {
     if (card === 'src') saveCard('src', ['infoSource']);
     else if (card === 'display') saveCard('display', ['showTime','showDate','showWeather','showBubble','bubblePlaceholder','bubbleScrollSpeed','bubbleFontSize','fontColors','city','weatherUnit']);
     else if (card === 'layout') saveCard('layout', ['layout']);
-    else if (card === 'agent') saveCard('agent', ['astrbotUrl','astrbotKey']);
+    else if (card === 'agent') saveCard('agent', ['astrbotUrl','astrbotKey','astrbotSession']);
   });
 });
 
@@ -321,6 +326,7 @@ function render() {
   if (src === 'wifi') refreshWifiStatus();
   $('inp-astrbot-url').value = config.astrbotUrl || '';
   $('inp-astrbot-key').value = config.astrbotKey || '';
+  $('sel-session').value = config.astrbotSession || '';
   // 布局滑条（含数值输入）
   const lay = config.layout || {};
   ['time','date','weather','bubble','model'].forEach(m => {
@@ -407,6 +413,45 @@ bindPair('rng-fontsize', 'num-fontsize', (v) => {
     markDirty('agent');
   });
 });
+$('sel-session').addEventListener('change', (e) => {
+  draft.astrbotSession = e.target.value;
+  markDirty('agent');
+});
+// 刷新会话列表（拉取 AstrBot 活跃会话）
+function friendlyOrigin(o) {
+  if (!o) return '';
+  const m = o.match(/^([^:]+):(.+)$/);
+  if (!m) return o;
+  const type = { qq_group: '群聊', qq_private: '私聊', wechat_group: '微信群', wechat_private: '微信私聊', webchat: '网页', qq: 'QQ' }[m[1]] || m[1];
+  return type + ' ' + m[2];
+}
+async function refreshSessions() {
+  const btn = $('btn-refresh-sessions');
+  btn.textContent = '…';
+  try {
+    const r = await fetch(API + '/api/astrbot/sessions');
+    const d = await r.json();
+    const sel = $('sel-session');
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">全部会话</option>';
+    if (d.ok && d.sessions) {
+      Object.entries(d.sessions).forEach(([origin, info]) => {
+        const op = document.createElement('option');
+        op.value = origin;
+        op.textContent = friendlyOrigin(origin) + (info && info.last_msg ? ' — ' + info.last_msg : '');
+        sel.appendChild(op);
+      });
+    } else if (d.error) {
+      toast('拉取失败：' + d.error);
+    }
+    sel.value = cur;
+  } catch (e) {
+    toast('拉取会话失败：' + e.message);
+  } finally {
+    btn.textContent = '🔄';
+  }
+}
+$('btn-refresh-sessions').addEventListener('click', refreshSessions);
 
 // ---------- 信息获取方式 ----------
 ['src-wifi','src-rndis'].forEach(id => {
