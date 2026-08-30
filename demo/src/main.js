@@ -255,6 +255,7 @@ function applyLayout() {
     const v = L[k] || { x: 0, y: 0, scale: 1 }
     const sx = Number(v.scale) || 1
     el.style.transform = `translate(${Number(v.x) || 0}px, ${Number(v.y) || 0}px) scale(${sx})`
+    if (id === 'chat-bubble') el.style.setProperty('--bubble-scale', sx) // 气泡宽度/高度随缩放反比（不覆盖模型/面板）
   }
   set('time-block', 'time')
   set('date-display', 'date')

@@ -102,12 +102,12 @@
         color: var(--text);
         /* 宽度自适应内容，最长不超过左半屏；长文本换行 + 向下滚动 */
         width: fit-content;
-        max-width: 100%;
+        max-width: calc(100% / var(--bubble-scale, 1)); /* 随缩放反比：放大后视觉宽度仍不超左半屏（不覆盖右侧模型） */
         min-width: 0; /* flex 子项允许收缩（否则 fit-content 会撑破 max-width） */
         word-break: break-all; /* 强制断行（长 URL/英文串也不溢出）；中文天然可断不受影响 */
         overflow-wrap: break-word;
         transform-origin: left top; /* 缩放从左上角开始：放大时向右下扩展，左边不超出屏幕 */
-        max-height: 40%;
+        max-height: calc(40% / var(--bubble-scale, 1)); /* 高度随缩放反比：放大后视觉高度仍不超过面板 40% */
         overflow-y: auto;
         scrollbar-width: none; /* 隐藏滚动条（kiosk 无鼠标，滚动条无意义） */
         -ms-overflow-style: none;
