@@ -294,6 +294,7 @@ async function load() {
   ]);
   config = cfg; models = m.models || [];
   render();
+  refreshSessions(true);  // 自动拉取会话列表（静默），避免刷新后只有"全部会话"
 }
 
 function render() {
@@ -443,7 +444,7 @@ function friendlyOrigin(o) {
   const type = { qq_group: '群聊', qq_private: '私聊', wechat_group: '微信群', wechat_private: '微信私聊', webchat: '网页', qq: 'QQ' }[m[1]] || m[1];
   return type + ' ' + m[2];
 }
-async function refreshSessions() {
+async function refreshSessions(silent) {
   const btn = $('btn-refresh-sessions');
   btn.textContent = '…';
   try {
@@ -459,7 +460,7 @@ async function refreshSessions() {
         op.textContent = friendlyOrigin(origin);  // 只显示会话名，不带最近对话内容
         sel.appendChild(op);
       });
-    } else if (d.error) {
+    } else if (d.error && !silent) {
       toast('拉取失败：' + d.error);
     }
     // 兜底：已保存的会话不在列表（如插件刚重启 sessions 内存清空）也显示，避免误选"全部"
@@ -471,7 +472,7 @@ async function refreshSessions() {
     }
     sel.value = cur;
   } catch (e) {
-    toast('拉取会话失败：' + e.message);
+    if (!silent) toast('拉取会话失败：' + e.message);
   } finally {
     btn.textContent = '🔄';
   }
