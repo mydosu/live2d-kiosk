@@ -51,10 +51,14 @@
   .row { display:flex; align-items:center; justify-content:space-between; padding:11px 8px; border-bottom:1px solid rgba(253,238,243,.9); font-size:14px; gap:10px; flex-wrap:wrap; border-radius:10px; transition:background .2s; }
   .row:hover { background:rgba(255,240,246,.6); }
   .row:last-child { border-bottom:none; }
-  input[type=text], input[type=number], input[type=password], select { background:rgba(255,255,255,.9); border:1px solid var(--border); color:var(--text); border-radius:11px; padding:8px 11px; font-size:13px; transition:border-color .2s, box-shadow .2s; }
-  input[type=text]:focus, input[type=number]:focus, input[type=password]:focus, select:focus { outline:none; border-color:#ff8fb5; box-shadow:0 0 0 3px rgba(255,111,159,.16); }
+  input[type=text], input[type=number], input[type=password] { background:rgba(255,255,255,.9); border:1px solid var(--border); color:var(--text); border-radius:11px; padding:8px 11px; font-size:13px; transition:border-color .2s, box-shadow .2s; }
+  input[type=text]:focus, input[type=number]:focus, input[type=password]:focus { outline:none; border-color:#ff8fb5; box-shadow:0 0 0 3px rgba(255,111,159,.16); }
   input[type=text] { width:170px; }
   input[type=number] { width:62px; text-align:center; }
+  /* select：自定义粉色下拉箭头（原生弹层尽量贴近主题） */
+  select { appearance:none; -webkit-appearance:none; background:rgba(255,255,255,.9) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23f44e86' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 12px center; border:1px solid var(--border); color:var(--text); border-radius:11px; padding:8px 32px 8px 11px; font-size:13px; cursor:pointer; transition:border-color .2s, box-shadow .2s; }
+  select:focus { outline:none; border-color:#ff8fb5; box-shadow:0 0 0 3px rgba(255,111,159,.16); }
+  select option { background:#fff; color:var(--text); padding:6px; }
   .switch { position:relative; width:46px; height:26px; flex-shrink:0; }
   .switch input { opacity:0; width:0; height:0; }
   .slider { position:absolute; inset:0; border-radius:13px; background:#f0d6e0; transition:.25s; cursor:pointer; }
@@ -79,7 +83,10 @@
   input[type=range]::-webkit-slider-thumb:hover { transform:scale(1.15); box-shadow:0 3px 10px rgba(255,111,159,.55); }
   input[type=range]::-moz-range-thumb { width:19px; height:19px; border:none; border-radius:50%; background:var(--accent); cursor:pointer; box-shadow:0 2px 6px rgba(255,111,159,.45); }
   .upload { display:flex; flex-direction:column; gap:10px; }
-  .upload input[type=file] { font-size:13px; color:var(--dim); }
+  .file-btn { display:inline-flex; align-items:center; gap:8px; padding:12px 18px; border-radius:12px; border:1.5px dashed #ff9fc4; background:rgba(255,248,251,.8); color:var(--accent-dark); font-size:14px; cursor:pointer; transition:.2s; width:fit-content; }
+  .file-btn:hover { background:#fff; border-color:var(--accent); box-shadow:0 4px 14px rgba(255,111,159,.18); }
+  .file-btn:active { transform:scale(.98); }
+  .file-btn .fname { color:var(--dim); font-size:13px; max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .btn { padding:10px 18px; border-radius:12px; border:none; cursor:pointer; font-size:14px; transition:.2s; }
   .btn-primary { background:linear-gradient(135deg,#ff6f9f,#ff9fc4); color:#fff; box-shadow:0 4px 14px rgba(255,111,159,.35); }
   .btn-danger { background:linear-gradient(135deg,#e5484d,#f0716e); color:#fff; }
@@ -117,7 +124,11 @@
         <h2>模型管理</h2>
         <div class="models" id="model-list">加载中…</div>
         <div class="upload" style="margin-top:14px">
-          <input type="file" id="file" accept=".zip" />
+          <label class="file-btn" for="file">
+            <span>选择模型文件</span>
+            <span class="fname" id="file-name">未选择（zip 格式）</span>
+            <input type="file" id="file" accept=".zip" hidden />
+          </label>
           <button class="btn btn-primary" id="btn-upload" disabled>上传模型</button>
           <div class="sub" id="upload-hint" style="margin:0">选择模型压缩包（zip 格式）上传，即可在屏幕上展示新角色</div>
         </div>
@@ -723,7 +734,11 @@ function bindLayout() {
 }
 bindLayout();
 
-$('file').addEventListener('change', () => { $('btn-upload').disabled = !$('file').files.length; });
+$('file').addEventListener('change', () => {
+  const f = $('file').files[0];
+  $('btn-upload').disabled = !f;
+  $('file-name').textContent = f ? f.name : '未选择（zip 格式）';
+});
 $('btn-upload').addEventListener('click', async () => {
   const f = $('file').files[0];
   if (!f) return;
@@ -737,6 +752,7 @@ $('btn-upload').addEventListener('click', async () => {
   toast('上传成功：' + (d.uploaded || []).join(', '));
   models = d.models || []; render();
   $('file').value = '';
+  $('file-name').textContent = '未选择（zip 格式）';
 });
 
 $('btn-test').addEventListener('click', async () => {
