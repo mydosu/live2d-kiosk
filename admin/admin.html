@@ -155,9 +155,9 @@
     <div class="page" id="page-source">
       <div class="card">
         <h2>网络与信息</h2>
-        <div class="row"><span>连接 WiFi 获取信息（天气、时间等）</span><label class="switch"><input type="radio" name="src" id="src-wifi" /><span class="slider"></span></label></div>
-        <div class="row"><span>USB 连接电脑（由电脑提供时间、天气、位置）</span><label class="switch"><input type="radio" name="src" id="src-rndis" /><span class="slider"></span></label></div>
-        <div class="sub" style="margin:6px 0 0">USB 模式：连接电脑后，电脑端软件会自动推送时间、天气和位置信息到屏幕</div>
+                <div class="row"><span>WiFi 无线联网</span><label class="switch"><input type="radio" name="src" id="src-wifi" /><span class="slider"></span></label></div>
+                <div class="row"><span>USB 共享网络（电脑 ICS）</span><label class="switch"><input type="radio" name="src" id="src-usb" /><span class="slider"></span></label></div>
+                <div class="sub" style="margin:6px 0 0">联网方式二选一（WiFi 或 USB 共享网络），联网后时间/天气/位置均自动从网络获取</div>
         <div id="wifi-box" style="margin-top:10px">
           <div class="sub" style="margin:0 0 8px">WiFi 连接（本机没有网线接口，请使用 WiFi 连接网络）</div>
           <div class="row" style="flex-wrap:wrap"><span style="font-size:13px">状态：<b id="wifi-status">未知</b></span>
@@ -253,7 +253,7 @@
                 </div>
                 <div class="row"><span>天气源</span>
                   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-                    <select id="sel-weather-provider" style="width:auto"><option value="wttr">wttr.in（海外默认）</option><option value="amap">高德天气（国内稳定）</option></select>
+                    <select id="sel-weather-provider" style="width:auto"><option value="amap">高德天气（国内稳定）</option><option value="wttr">wttr.in（海外备选）</option></select>
                     <input type="password" id="inp-weather-key" placeholder="高德 API Key（可选）" style="width:auto" />
                   </div>
                 </div>
@@ -501,7 +501,7 @@ function render() {
     $('sw-bubble').checked = !!config.showBubble;
     $('inp-city').value = config.city || '';
       $('sel-unit').value = config.weatherUnit || 'c';
-      $('sel-weather-provider').value = config.weatherProvider || 'wttr';
+      $('sel-weather-provider').value = config.weatherProvider || 'amap';
       $('inp-weather-key').value = config.weatherKey || '';
     $('inp-placeholder').value = config.bubblePlaceholder || '等待 agent 消息…';
     // 渲染 helper：读取配置值（带默认）并同步到 滑条/数值/文本 三元组
@@ -527,11 +527,11 @@ function render() {
   document.querySelectorAll('.bg-chip').forEach(b => b.classList.toggle('active', b.dataset.theme === (config.bgTheme || 'aurora')));
   renderBgImage();
   // 信息源
-  const src = config.infoSource || 'wifi';
-  $('src-wifi').checked = src === 'wifi';
-  $('src-rndis').checked = src === 'rndis';
-  $('wifi-box').style.display = src === 'wifi' ? '' : 'none';
-  if (src === 'wifi') refreshWifiStatus();
+    const src = config.infoSource || 'wifi';
+    $('src-wifi').checked = src === 'wifi';
+    $('src-usb').checked = src === 'usb';
+    $('wifi-box').style.display = src === 'wifi' ? '' : 'none';
+    if (src === 'wifi') refreshWifiStatus();
   $('inp-astrbot-url').value = config.astrbotUrl || '';
   $('inp-astrbot-key').value = config.astrbotKey || '';
   $('sel-session').value = config.astrbotSession || '';
@@ -882,15 +882,15 @@ refreshShellStatus();
 setInterval(refreshShellStatus, 10000);
 
 // ---------- 信息获取方式 ----------
-['src-wifi','src-rndis'].forEach(id => {
+['src-wifi','src-usb'].forEach(id => {
   $(id).addEventListener('change', (e) => {
     if (!e.target.checked) return;
-    const src = id === 'src-wifi' ? 'wifi' : 'rndis';
+    const src = id === 'src-wifi' ? 'wifi' : 'usb';
     $('wifi-box').style.display = src === 'wifi' ? '' : 'none';
     draft.infoSource = src;
     markDirty('src');
     if (src === 'wifi') refreshWifiStatus();
-    toast(src === 'wifi' ? '已切换到 WiFi 模式' : '已切换到 USB 电脑模式');
+    toast(src === 'wifi' ? '已切换到 WiFi 无线联网' : '已切换到 USB 共享网络');
   });
 });
 

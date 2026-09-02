@@ -70,7 +70,7 @@ let CONFIG = {
   showBubble: true,
   city: '',
   weatherUnit: 'c',
-  weatherProvider: 'wttr', // 天气源：wttr(海外默认) | amap(高德国内，需weatherKey)
+  weatherProvider: 'amap', // 天气源：amap(高德，默认，需weatherKey) | wttr(海外备选)
   weatherKey: '', // 高德天气 API Key（可选；配了则 wttr 失败自动降级高德）
   zoom: 1.43, // 模型缩放（管理后台可调，适配画布空白大的模型）
   bubbleScrollSpeed: 20, // 气泡循环滚动速度（px/s）
@@ -82,7 +82,7 @@ let CONFIG = {
   bgTheme: 'aurora', // 屏幕背景主题：aurora(极光) | pink(粉嫩) | dark(深色) | mint(薄荷) | sunset(日落)
   fontStyles: { time: 'default', date: 'default', weather: 'default', bubble: 'default' }, // 各模块字体风格（每模块独立选择）
   showDate: true, // 显示日期/星期
-  infoSource: 'wifi', // 时间/天气信息来源：wifi(网络获取) | rndis(用户电脑推送)
+  infoSource: 'wifi', // 联网方式：wifi(无线) | usb(USB 共享网络/电脑 ICS)——都是联网后网络自动获取时间/天气/位置
   // 模块自由排版：每个模块相对默认位置的像素偏移 + 缩放
   layout: {
     time: { x: 0, y: 0, scale: 1 },
@@ -98,76 +98,79 @@ const IS_KIOSK = new URLSearchParams(location.search).has('kiosk')
 
 /* ---------------- 左侧面板：时间 / 天气 / 气泡 ---------------- */
 const WEEK = ['日', '一', '二', '三', '四', '五', '六']
-let externalClock = null // RNDIS 推送的时间/日期（infoSource=rndis 时使用）
-let externalWeather = null // RNDIS 推送的天气/位置
+// 时间/天气统一走网络自动获取（WiFi 或 USB 共享网络皆可），不再依赖电脑推送
 
 function startClock() {
   const tick = () => {
-    if (CONFIG.infoSource === 'rndis' && externalClock) {
-      timeDisplay.textContent = externalClock.time
-      dateDisplay.textContent = externalClock.date
-    } else {
-      const now = new Date()
-      timeDisplay.textContent = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
-      dateDisplay.textContent = `${now.getMonth() + 1}月${now.getDate()}日 星期${WEEK[now.getDay()]}`
-    }
+    const now = new Date()
+    timeDisplay.textContent = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+    dateDisplay.textContent = `${now.getMonth() + 1}月${now.getDate()}日 星期${WEEK[now.getDay()]}`
   }
   tick()
   setInterval(tick, 10000) // 分钟级更新即可
 }
 
 let weatherTimer = null
-async function updateWeather() {
-  if (!CONFIG.showWeather) return
-  // RNDIS 模式：使用电脑推送的天气/位置数据
-  if (CONFIG.infoSource === 'rndis') {
-    weatherDisplay.textContent = externalWeather || '等待电脑推送天气…'
-    return
+// 天气源：amap(高德，默认，国内稳定) | wttr(wttr.in，海外备选)
+const W_PROVIDER = () => CONFIG.weatherProvider || 'amap'
+// 带超时的 fetch（6s 内失败，避免网络不通时长时间空白等待）
+async function fetchTimeout(url, ms = 6000) {
+  const ctrl = new AbortController()
+  const t = setTimeout(() => ctrl.abort(), ms)
+  try {
+    return await (await fetch(url, { signal: ctrl.signal })).json()
+  } finally {
+    clearTimeout(t)
   }
+}
+async function fetchAmapWeather() {
+  // 高德天气：需 weatherKey；城市名直查，失败自动 IP 定位
+  const key = CONFIG.weatherKey
+  if (!key) throw new Error('no amap key')
+  let city = (CONFIG.city || '').trim() || '上海'
+  let d = await fetchTimeout(`https://restapi.amap.com/v3/weather/weatherInfo?key=${encodeURIComponent(key)}&city=${encodeURIComponent(city)}&extensions=base`)
+  let cur = d.lives?.[0]
+  if (!cur) {
+    // 城市名定位失败 → IP 定位拿 adcode 再查
+    const ip = await fetchTimeout(`https://restapi.amap.com/v3/ip?key=${encodeURIComponent(key)}`)
+    const adcode = ip.adcode
+    if (adcode) {
+      d = await fetchTimeout(`https://restapi.amap.com/v3/weather/weatherInfo?key=${encodeURIComponent(key)}&city=${encodeURIComponent(adcode)}&extensions=base`)
+      cur = d.lives?.[0]
+    }
+  }
+  if (!cur) throw new Error('amap no data')
+  return {
+    area: cur.city || city,
+    temp: CONFIG.weatherUnit === 'f' ? `${Math.round(cur.temperature * 9 / 5 + 32)}°F` : `${cur.temperature}°C`,
+    desc: cur.weather || '',
+  }
+}
+async function fetchWttrWeather() {
   const city = (CONFIG.city || '').trim()
   const unitFlag = CONFIG.weatherUnit === 'f' ? 'u' : 'm'
-  // 天气源可配：wttr（默认，海外）/ amap（高德，国内稳定，需 weatherKey）
-  const provider = CONFIG.weatherProvider || 'wttr'
-  let area = '', temp = '', desc = ''
-  try {
-    if (provider === 'amap' && CONFIG.weatherKey) {
-      // 高德天气（国内秒通）：需 key；城市用 adcode 或城市名
-      const adcode = await (await fetch(`https://restapi.amap.com/v3/geocode/geo?key=${encodeURIComponent(CONFIG.weatherKey)}&address=${encodeURIComponent(city || '上海')}`)).json()
-      const loc = adcode.geocodes?.[0]
-      const d = await (await fetch(`https://restapi.amap.com/v3/weather/weatherInfo?key=${encodeURIComponent(CONFIG.weatherKey)}&city=${loc ? loc.adcode : ''}`)).json()
-      const cur = d.lives?.[0]
-      if (cur) {
-        area = cur.city || city || '未知'
-        temp = CONFIG.weatherUnit === 'f' ? `${Math.round(cur.temperature * 9 / 5 + 32)}°F` : `${cur.temperature}°C`
-        desc = cur.weather || ''
-      }
-    } else {
-      // wttr.in（默认）
-      const url = `https://wttr.in/${encodeURIComponent(city || '')}?format=j1&${unitFlag}`
-      const w = await (await fetch(url)).json()
-      const cur = w.current_condition?.[0]
-      if (cur) {
-        area = w.nearest_area?.[0]?.areaName?.[0]?.value || city || ''
-        temp = CONFIG.weatherUnit === 'f' ? `${cur.temp_F}°F` : `${cur.temp_C}°C`
-        desc = cur.weatherDesc?.[0]?.value || ''
-      }
-    }
-    if (temp) weatherDisplay.textContent = `${area} · ${temp} · ${desc}`
-    else throw new Error('no data')
-  } catch {
-    // wttr 失败且配了高德 key 时自动降级高德
-    if (provider !== 'amap' && CONFIG.weatherKey) {
-      try {
-        const d = await (await fetch(`https://restapi.amap.com/v3/weather/weatherInfo?key=${encodeURIComponent(CONFIG.weatherKey)}&city=${encodeURIComponent(city || '')}`)).json()
-        const cur = d.lives?.[0]
-        if (cur) {
-          weatherDisplay.textContent = `${cur.city} · ${cur.temperature}°C · ${cur.weather}`
-          return
-        }
-      } catch { /* 高德也失败 */ }
-    }
-    weatherDisplay.textContent = '天气不可用'
+  const url = `https://wttr.in/${encodeURIComponent(city || '')}?format=j1&${unitFlag}`
+  const w = await fetchTimeout(url, 8000)
+  const cur = w.current_condition?.[0]
+  if (!cur) throw new Error('wttr no data')
+  return {
+    area: w.nearest_area?.[0]?.areaName?.[0]?.value || city || '',
+    temp: CONFIG.weatherUnit === 'f' ? `${cur.temp_F}°F` : `${cur.temp_C}°C`,
+    desc: cur.weatherDesc?.[0]?.value || '',
   }
+}
+async function updateWeather() {
+  if (!CONFIG.showWeather) return
+  // 联网模式统一网络获取（USB 共享 / WiFi 都走这里），不再有电脑推送
+  const provider = W_PROVIDER()
+  const fetchers = provider === 'wttr' ? [fetchWttrWeather, fetchAmapWeather] : [fetchAmapWeather, fetchWttrWeather]
+  for (const fn of fetchers) {
+    try {
+      const { area, temp, desc } = await fn()
+      if (temp) { weatherDisplay.textContent = `${area} · ${temp} · ${desc}`; return }
+    } catch { /* 换下一个源 */ }
+  }
+  weatherDisplay.textContent = '天气不可用'
 }
 function startWeather() {
   updateWeather()
@@ -431,16 +434,6 @@ function handleWSMessage(msg) {
       chatBubble.textContent = CONFIG.bubblePlaceholder || '等待 agent 消息…'
       chatBubble.style.fontSize = (Number(CONFIG.bubbleFontSize) || 14) + 'px'
       stopAutoScroll()
-      break
-    case 'timeinfo': // RNDIS 模式：电脑推送时间/日期/天气/位置
-      if (msg.time || msg.date) {
-        externalClock = { time: msg.time || '', date: msg.date || '' }
-        if (CONFIG.showTime) startClock()
-      }
-      if (msg.weather || msg.location) {
-        externalWeather = msg.weather || msg.location || externalWeather
-        if (CONFIG.showWeather) updateWeather()
-      }
       break
   }
 }

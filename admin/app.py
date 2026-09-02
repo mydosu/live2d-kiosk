@@ -32,7 +32,7 @@ DEFAULT_CONFIG = {
     "showBubble": True,
     "city": "",
     "weatherUnit": "c",
-    "weatherProvider": "wttr",  # 天气源：wttr(海外默认) | amap(高德国内，需weatherKey)
+    "weatherProvider": "amap",  # 天气源：amap(高德，默认，需weatherKey) | wttr(海外备选)
     "weatherKey": "",  # 高德天气 API Key（可选；配了则 wttr 失败自动降级高德）
     "zoom": 1.43,
     "bubbleScrollSpeed": 20,  # 气泡循环滚动速度（px/s）
@@ -44,7 +44,7 @@ DEFAULT_CONFIG = {
     "bgTheme": "aurora",  # 屏幕背景主题：aurora(极光) | pink(粉嫩) | dark(深色) | mint(薄荷) | sunset(日落)
     "fontStyle": "default",  # 字体风格（兼容旧配置，已废弃——用 fontStyles 每模块）
     "fontStyles": {"time": "default", "date": "default", "weather": "default", "bubble": "default"},  # 各模块字体风格：default/round/quicksand/nunito/baloo/fredoka/orbitron/serif
-    "infoSource": "wifi",  # 时间/天气信息来源：wifi(网络获取) | rndis(用户电脑推送)
+    "infoSource": "wifi",  # 联网方式：wifi(无线) | usb(USB 共享网络/电脑 ICS)——联网后统一网络自动获取时间/天气/位置
     "astrbotUrl": "",  # AstrBot 主机地址（板子壳连接用）：局域网如 http://192.168.5.6:6185，或 DDNS 域名
     "astrbotKey": "",  # AstrBot API Key（WebUI 设置→API Key 创建，勾选 plugin/chat/file scope）
     "astrbotSession": "",  # 显示指定会话的消息（空 = 全部；后台「智能助手」页下拉选择）
