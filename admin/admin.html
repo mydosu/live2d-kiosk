@@ -21,17 +21,18 @@
   .app { display:flex; min-height:100vh; }
 
   /* ---------- 左侧可伸缩边栏（毛玻璃） ---------- */
-  #sidebar { width:180px; background:rgba(255,255,255,.5); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); border-right:1px solid rgba(255,255,255,.75); padding:14px 10px; transition:width .25s; overflow:hidden; flex-shrink:0; display:flex; flex-direction:column; gap:8px; }
-  .app.collapsed #sidebar { width:48px; }
-  .side-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
-  .side-title { font-size:13px; font-weight:700; color:var(--accent-dark); white-space:nowrap; }
-  .app.collapsed .side-title { display:none; }
-  #btn-collapse { border:none; background:linear-gradient(135deg,#ffb6cd,#ffd3e2); color:#b03a63; border-radius:8px; padding:4px 8px; cursor:pointer; font-size:12px; flex-shrink:0; }
-  .nav-item { display:flex; align-items:center; gap:8px; width:100%; padding:10px 12px; border:none; border-radius:10px; background:transparent; color:var(--text); cursor:pointer; font-size:14px; text-align:left; white-space:nowrap; transition:.2s; }
-  .nav-item:hover { background:rgba(255,111,159,.12); }
-  .nav-item.active { background:linear-gradient(135deg,#ff6f9f,#ff9fc4); color:#fff; font-weight:600; box-shadow:0 3px 10px rgba(255,111,159,.4); }
-  .app.collapsed .nav-item { justify-content:center; padding:10px 0; }
-  .app.collapsed .nav-item span:last-child { display:none; }
+  #sidebar { width:180px; background:rgba(255,255,255,.5); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); border-right:1px solid rgba(255,255,255,.75); padding:14px 10px; transition:width .3s cubic-bezier(.4,0,.2,1); overflow:hidden; flex-shrink:0; display:flex; flex-direction:column; gap:8px; }
+    .app.collapsed #sidebar { width:48px; }
+    .side-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+    .side-title { font-size:13px; font-weight:700; color:var(--accent-dark); white-space:nowrap; }
+    .app.collapsed .side-title { display:none; }
+    #btn-collapse { border:none; background:linear-gradient(135deg,#ffb6cd,#ffd3e2); color:#b03a63; border-radius:8px; padding:4px 8px; cursor:pointer; font-size:12px; flex-shrink:0; transition:.2s; }
+    #btn-collapse:hover { transform:scale(1.1); }
+    .nav-item { display:flex; align-items:center; gap:8px; width:100%; padding:10px 12px; border:none; border-radius:10px; background:transparent; color:var(--text); cursor:pointer; font-size:14px; text-align:left; white-space:nowrap; transition:.25s cubic-bezier(.4,0,.2,1); position:relative; }
+    .nav-item:hover { background:rgba(255,111,159,.12); padding-left:16px; }
+    .nav-item.active { background:linear-gradient(135deg,#ff6f9f,#ff9fc4); color:#fff; font-weight:600; box-shadow:0 3px 10px rgba(255,111,159,.4); }
+    .app.collapsed .nav-item { justify-content:center; padding:10px 0; }
+    .app.collapsed .nav-item span:last-child { display:none; }
 
   main { flex:1; padding:20px 24px; width:100%; }
   h1 { font-size:22px; margin-bottom:6px; background:linear-gradient(90deg,#f44e86,#b06ef0); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
@@ -41,7 +42,7 @@
   @keyframes fadeIn { from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
 
   .card { background:rgba(255,255,255,.68); backdrop-filter:blur(22px); -webkit-backdrop-filter:blur(22px); border-radius:22px; padding:20px; margin-bottom:16px; border:1px solid rgba(255,255,255,.85); box-shadow:0 10px 40px rgba(255,111,159,.1), 0 2px 8px rgba(255,111,159,.06); width:100%; transition:box-shadow .3s, transform .3s; }
-  .card:hover { box-shadow:0 14px 48px rgba(255,111,159,.16), 0 4px 12px rgba(255,111,159,.08); }
+    .card:hover { box-shadow:0 14px 48px rgba(255,111,159,.16), 0 4px 12px rgba(255,111,159,.08); transform:translateY(-1px); }
   .card h2 { font-size:15px; margin-bottom:12px; color:var(--accent-dark); display:flex; align-items:center; gap:6px; }
   .card h2::after { content:""; flex:1; height:1px; background:linear-gradient(90deg,rgba(255,111,159,.35),transparent); margin-left:8px; }
   .models { display:flex; flex-wrap:wrap; gap:8px; }
@@ -94,15 +95,23 @@
   .bg-chip { width:44px; height:30px; border-radius:9px; border:2px solid transparent; cursor:pointer; transition:.2s; box-shadow:0 2px 6px rgba(0,0,0,.12); }
   .bg-chip:hover { transform:scale(1.1); box-shadow:0 4px 10px rgba(0,0,0,.2); }
   .bg-chip.active { border-color:var(--accent); box-shadow:0 0 0 3px rgba(255,111,159,.3), 0 4px 10px rgba(0,0,0,.15); transform:scale(1.08); }
-  .btn { padding:10px 18px; border-radius:12px; border:none; cursor:pointer; font-size:14px; transition:.2s; }
-  .btn-primary { background:linear-gradient(135deg,#ff6f9f,#ff9fc4); color:#fff; box-shadow:0 4px 14px rgba(255,111,159,.35); }
-  .btn-danger { background:linear-gradient(135deg,#e5484d,#f0716e); color:#fff; }
-  .btn:hover { filter:brightness(1.07); transform:translateY(-1px); box-shadow:0 6px 18px rgba(255,111,159,.3); }
-  .btn:active { transform:scale(.97); }
-  .btn:disabled { opacity:.5; cursor:not-allowed; transform:none; box-shadow:none; }
-  .btn-save.dirty { background:linear-gradient(135deg,#ffb13d,#ffcf7a) !important; }
-  .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:rgba(255,255,255,.85); backdrop-filter:blur(12px); color:var(--text); border:1px solid var(--border); box-shadow:0 8px 24px rgba(255,111,159,.25); padding:10px 18px; border-radius:12px; font-size:13px; opacity:0; transition:.3s; pointer-events:none; z-index:99; }
-  .toast.show { opacity:1; }
+  .btn { padding:10px 18px; border-radius:12px; border:none; cursor:pointer; font-size:14px; transition:.2s; position:relative; overflow:hidden; }
+    .btn-primary { background:linear-gradient(135deg,#ff6f9f,#ff9fc4); color:#fff; box-shadow:0 4px 14px rgba(255,111,159,.35); }
+    .btn-danger { background:linear-gradient(135deg,#e5484d,#f0716e); color:#fff; }
+    /* 按钮流光扫过效果 */
+    .btn::after { content:""; position:absolute; top:0; left:-80%; width:50%; height:100%; background:linear-gradient(100deg,transparent,rgba(255,255,255,.45),transparent); transform:skewX(-20deg); transition:left .5s ease; }
+    .btn:hover::after { left:130%; }
+    .btn:hover { filter:brightness(1.07); transform:translateY(-1px); box-shadow:0 6px 18px rgba(255,111,159,.3); }
+    .btn:active { transform:scale(.97); }
+    .btn:disabled { opacity:.5; cursor:not-allowed; transform:none; box-shadow:none; }
+    .btn-save.dirty { background:linear-gradient(135deg,#ffb13d,#ffcf7a) !important; }
+    /* 细窄粉色滚动条（清新不突兀） */
+    ::-webkit-scrollbar { width:8px; height:8px; }
+    ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { background:rgba(255,111,159,.28); border-radius:4px; }
+    ::-webkit-scrollbar-thumb:hover { background:rgba(255,111,159,.45); }
+  .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); background:rgba(255,255,255,.85); backdrop-filter:blur(12px); color:var(--text); border:1px solid var(--border); box-shadow:0 8px 24px rgba(255,111,159,.25); padding:10px 18px; border-radius:12px; font-size:13px; opacity:0; transition:.3s cubic-bezier(.34,1.56,.64,1); pointer-events:none; z-index:99; }
+    .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
   .rst { background:none; border:none; cursor:pointer; color:var(--dim); font-size:15px; padding:1px 7px; border-radius:6px; line-height:1; flex-shrink:0; }
   .rst:hover { background:rgba(255,111,159,.12); color:var(--accent); }
   .hidden { display:none; }
@@ -343,22 +352,32 @@ function clearDirty(card) {
   const b = document.querySelector('.btn-save[data-card="' + card + '"]');
   if (b) { b.classList.remove('dirty'); b.textContent = b.textContent.replace('⚠', ''); }
 }
+// 统一 API 调用（带 JSON）与草稿写入
+async function api(url, method = 'GET', body = null) {
+  const opt = { method, headers: {} };
+  if (body) { opt.headers['Content-Type'] = 'application/json'; opt.body = JSON.stringify(body); }
+  return (await fetch(API + url, opt)).json();
+}
+function draftField(key, val) {
+  draft[key] = val;
+  markDirty('display');
+}
 async function saveCard(card, fields) {
   const body = {};
   fields.forEach(f => body[f] = draft[f] !== undefined ? draft[f] : config[f]);
-  await fetch(API + '/api/config', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+  await api('/api/config', 'POST', body);
   Object.assign(config, body);
   clearDirty(card);
   toast('已保存，屏幕将立即更新');
 }
+const SAVE_FIELDS = {
+  src: ['infoSource'],
+  display: ['showTime','showDate','showWeather','showBubble','bubblePlaceholder','bubbleScrollSpeed','bubbleHold','bubbleFontSize','fontColors','bubbleBgColor','bgTheme','fontStyles','city','weatherUnit'],
+  layout: ['layout'],
+  agent: ['astrbotUrl','astrbotKey','astrbotSession'],
+};
 document.querySelectorAll('.btn-save').forEach(b => {
-  b.addEventListener('click', () => {
-    const card = b.dataset.card;
-    if (card === 'src') saveCard('src', ['infoSource']);
-    else if (card === 'display') saveCard('display', ['showTime','showDate','showWeather','showBubble','bubblePlaceholder','bubbleScrollSpeed','bubbleHold','bubbleFontSize','fontColors','bubbleBgColor','bgTheme','fontStyles','city','weatherUnit']);
-    else if (card === 'layout') saveCard('layout', ['layout']);
-    else if (card === 'agent') saveCard('agent', ['astrbotUrl','astrbotKey','astrbotSession']);
-  });
+  b.addEventListener('click', () => saveCard(b.dataset.card, SAVE_FIELDS[b.dataset.card] || []));
 });
 
 async function load() {
@@ -465,23 +484,24 @@ function render() {
   });
   if (!models.length) box.textContent = '暂无模型，请上传 zip';
   // 开关
-  $('sw-time').checked = !!config.showTime;
-  $('sw-date').checked = !!config.showDate;
-  $('sw-weather').checked = !!config.showWeather;
-  $('sw-bubble').checked = !!config.showBubble;
-  $('inp-city').value = config.city || '';
-  $('sel-unit').value = config.weatherUnit || 'c';
-  $('inp-placeholder').value = config.bubblePlaceholder || '等待 agent 消息…';
-  $('rng-speed').value = config.bubbleScrollSpeed || 20;
-  $('num-speed').value = config.bubbleScrollSpeed || 20;
-  $('speed-val').textContent = (config.bubbleScrollSpeed || 20) + 'px/s';
-  $('rng-fontsize').value = config.bubbleFontSize || 14;
-  $('num-fontsize').value = config.bubbleFontSize || 14;
-  $('fontsize-val').textContent = (config.bubbleFontSize || 14) + 'px';
-  const hold = config.bubbleHold ?? 0;
-  $('rng-hold').value = hold;
-  $('num-hold').value = hold;
-  $('hold-val').textContent = hold > 0 ? hold + 's' : '0s（一直）';
+    $('sw-time').checked = !!config.showTime;
+    $('sw-date').checked = !!config.showDate;
+    $('sw-weather').checked = !!config.showWeather;
+    $('sw-bubble').checked = !!config.showBubble;
+    $('inp-city').value = config.city || '';
+    $('sel-unit').value = config.weatherUnit || 'c';
+    $('inp-placeholder').value = config.bubblePlaceholder || '等待 agent 消息…';
+    // 渲染 helper：读取配置值（带默认）并同步到 滑条/数值/文本 三元组
+    const num = (val, d) => parseFloat(val) || d;
+    const pair = (prefix, val, d, fmt) => {
+      $('rng-' + prefix).value = val;
+      $('num-' + prefix).value = val;
+      $('' + prefix + '-val').textContent = fmt(num(val, d));
+    };
+    pair('speed', config.bubbleScrollSpeed, 20, (v) => v + 'px/s');
+    pair('fontsize', config.bubbleFontSize, 14, (v) => v + 'px');
+    const hold = config.bubbleHold ?? 0;
+    pair('hold', hold, 0, (v) => v > 0 ? v + 's' : '0s（一直）');
   const fc = config.fontColors || {};
   $('col-time').value = fc.time || '#ffffff';
   $('col-date').value = fc.date || '#9a9ab0';
@@ -503,54 +523,43 @@ function render() {
   $('inp-astrbot-key').value = config.astrbotKey || '';
   $('sel-session').value = config.astrbotSession || '';
   // 布局滑条（含数值输入）
-  const lay = config.layout || {};
-  ['time','date','weather','bubble','model'].forEach(m => {
-    const v = lay[m] || {x:0, y:0, scale:1};
-    ['x','y'].forEach(axis => {
-      $('lay-' + m + '-' + axis).value = v[axis] || 0;
-      $('lay-' + m + '-' + axis + 'n').value = v[axis] || 0;
-      $('lay-' + m + '-' + axis + 'v').textContent = v[axis] || 0;
+    const lay = config.layout || {};
+    ['time','date','weather','bubble','model'].forEach(m => {
+      const v = lay[m] || {x:0, y:0, scale:1};
+      ['x','y'].forEach(axis => {
+        const val = v[axis] || 0;
+        $('lay-' + m + '-' + axis).value = val;
+        $('lay-' + m + '-' + axis + 'n').value = val;
+        $('lay-' + m + '-' + axis + 'v').textContent = val;
+      });
+      const sEl = $('lay-' + m + '-s');
+      if (sEl) {
+        const s = (v.scale || 1).toFixed(2);
+        sEl.value = s;
+        $('lay-' + m + '-sn').value = s;
+        $('lay-' + m + '-sv').textContent = s;
+      }
     });
-    if ($('lay-' + m + '-s')) {
-      $('lay-' + m + '-s').value = v.scale || 1;
-      $('lay-' + m + '-sn').value = (v.scale || 1).toFixed(2);
-      $('lay-' + m + '-sv').textContent = (v.scale || 1).toFixed(2);
-    }
-  });
   // 清除未保存标记
   document.querySelectorAll('.btn-save').forEach(b => b.classList.remove('dirty'));
 }
 
 async function selectModel(name) {
-  const r = await fetch(API + '/api/model', {
-    method: 'POST', headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({model: name}),
-  });
-  const d = await r.json();
+  const d = await api('/api/model', 'POST', { model: name });
   if (d.error) return toast(d.error);
   config.model = name; render();
   toast('已切换角色：' + name + '（稍后显示）');
 }
 
 // ---------- 显示设置控件（草稿） ----------
-['sw-time','sw-date','sw-weather','sw-bubble'].forEach(id => {
-  $(id).addEventListener('change', (e) => {
-    draft[id === 'sw-time' ? 'showTime' : id === 'sw-date' ? 'showDate' : id === 'sw-weather' ? 'showWeather' : 'showBubble'] = e.target.checked;
-    markDirty('display');
-  });
+// 开关：id → 配置字段 映射（替代嵌套三元）
+const SWITCH_FIELDS = { 'sw-time': 'showTime', 'sw-date': 'showDate', 'sw-weather': 'showWeather', 'sw-bubble': 'showBubble' };
+Object.entries(SWITCH_FIELDS).forEach(([id, field]) => {
+  $(id).addEventListener('change', (e) => draftField(field, e.target.checked));
 });
-$('inp-city').addEventListener('change', (e) => {
-  draft.city = e.target.value.trim();
-  markDirty('display');
-});
-$('sel-unit').addEventListener('change', (e) => {
-  draft.weatherUnit = e.target.value;
-  markDirty('display');
-});
-$('inp-placeholder').addEventListener('change', (e) => {
-  draft.bubblePlaceholder = e.target.value.trim() || '等待 agent 消息…';
-  markDirty('display');
-});
+$('inp-city').addEventListener('change', (e) => draftField('city', e.target.value.trim()));
+$('sel-unit').addEventListener('change', (e) => draftField('weatherUnit', e.target.value));
+$('inp-placeholder').addEventListener('change', (e) => draftField('bubblePlaceholder', e.target.value.trim() || '等待 agent 消息…'));
 // 速度滑条 + 数值输入联动
 function bindPair(sliderId, numId, onVal) {
   const sl = $(sliderId), num = $(numId);
@@ -562,22 +571,10 @@ function bindPair(sliderId, numId, onVal) {
     num.value = v; sl.value = v; onVal(v);
   });
 }
-bindPair('rng-speed', 'num-speed', (v) => {
-  $('speed-val').textContent = v + 'px/s';
-  draft.bubbleScrollSpeed = v;
-  markDirty('display');
-});
-bindPair('rng-hold', 'num-hold', (v) => {
-  $('hold-val').textContent = v > 0 ? v + 's' : '0s（一直）';
-  draft.bubbleHold = v;
-  markDirty('display');
-});
+bindPair('rng-speed', 'num-speed', (v) => { $('speed-val').textContent = v + 'px/s'; draftField('bubbleScrollSpeed', v); });
+bindPair('rng-hold', 'num-hold', (v) => { $('hold-val').textContent = v > 0 ? v + 's' : '0s（一直）'; draftField('bubbleHold', v); });
 // 气泡字体大小（滑条+数值联动）
-bindPair('rng-fontsize', 'num-fontsize', (v) => {
-  $('fontsize-val').textContent = v + 'px';
-  draft.bubbleFontSize = v;
-  markDirty('display');
-});
+bindPair('rng-fontsize', 'num-fontsize', (v) => { $('fontsize-val').textContent = v + 'px'; draftField('bubbleFontSize', v); });
 // 字体颜色
 ['time','date','weather','bubble'].forEach((k) => {
   $('col-' + k).addEventListener('input', (e) => {
@@ -586,10 +583,7 @@ bindPair('rng-fontsize', 'num-fontsize', (v) => {
   });
 });
 // 气泡背景色
-$('col-bubble-bg').addEventListener('input', (e) => {
-  draft.bubbleBgColor = e.target.value;
-  markDirty('display');
-});
+$('col-bubble-bg').addEventListener('input', (e) => draftField('bubbleBgColor', e.target.value));
 // 字体风格（每模块）
 ['time','date','weather','bubble'].forEach(k => {
   $('sel-font-' + k).addEventListener('change', (e) => {
