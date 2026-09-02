@@ -32,6 +32,8 @@ DEFAULT_CONFIG = {
     "showBubble": True,
     "city": "",
     "weatherUnit": "c",
+    "weatherProvider": "wttr",  # 天气源：wttr(海外默认) | amap(高德国内，需weatherKey)
+    "weatherKey": "",  # 高德天气 API Key（可选；配了则 wttr 失败自动降级高德）
     "zoom": 1.43,
     "bubbleScrollSpeed": 20,  # 气泡循环滚动速度（px/s）
     "bubbleHold": 0,  # 气泡滞留秒数（0 = 一直显示，直到下一条消息替换）
@@ -122,7 +124,7 @@ def api_config():
         return jsonify(load_config())
     cfg = load_config()
     data = request.get_json(silent=True) or {}
-    for k in ("showTime", "showDate", "showWeather", "showBubble", "city", "weatherUnit", "model", "zoom", "layout", "bubbleScrollSpeed", "bubbleHold", "bubblePlaceholder", "infoSource", "bubbleFontSize", "fontColors", "bubbleBgColor", "bgTheme", "fontStyles", "astrbotUrl", "astrbotKey", "astrbotSession"):
+    for k in ("showTime", "showDate", "showWeather", "showBubble", "city", "weatherUnit", "weatherProvider", "weatherKey", "model", "zoom", "layout", "bubbleScrollSpeed", "bubbleHold", "bubblePlaceholder", "infoSource", "bubbleFontSize", "fontColors", "bubbleBgColor", "bgTheme", "fontStyles", "astrbotUrl", "astrbotKey", "astrbotSession"):
         if k in data:
             cfg[k] = data[k]
     save_config(cfg)

@@ -249,9 +249,16 @@
         <div class="sub" style="margin:0">气泡背景为半透明磨砂渐变（以所选颜色为基色），不会遮挡主体背景</div>
         <div class="row"><span>城市（留空 = 自动定位）</span><input type="text" id="inp-city" placeholder="如：上海" /></div>
         <div class="row"><span>温度单位</span>
-          <select id="sel-unit"><option value="c">°C</option><option value="f">°F</option></select>
-        </div>
-        <button class="btn btn-primary btn-save" data-card="display" style="margin-top:12px">保存设置</button>
+                  <select id="sel-unit"><option value="c">°C</option><option value="f">°F</option></select>
+                </div>
+                <div class="row"><span>天气源</span>
+                  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                    <select id="sel-weather-provider" style="width:auto"><option value="wttr">wttr.in（海外默认）</option><option value="amap">高德天气（国内稳定）</option></select>
+                    <input type="password" id="inp-weather-key" placeholder="高德 API Key（可选）" style="width:auto" />
+                  </div>
+                </div>
+                <div class="sub" style="margin:0">wttr.in 从当前网络不可达时，填高德 Key 自动降级（需 https://lbs.amap.com 注册获取）</div>
+                <button class="btn btn-primary btn-save" data-card="display" style="margin-top:12px">保存设置</button>
       </div>
     </div>
 
@@ -372,7 +379,7 @@ async function saveCard(card, fields) {
 }
 const SAVE_FIELDS = {
   src: ['infoSource'],
-  display: ['showTime','showDate','showWeather','showBubble','bubblePlaceholder','bubbleScrollSpeed','bubbleHold','bubbleFontSize','fontColors','bubbleBgColor','bgTheme','fontStyles','city','weatherUnit'],
+  display: ['showTime','showDate','showWeather','showBubble','bubblePlaceholder','bubbleScrollSpeed','bubbleHold','bubbleFontSize','fontColors','bubbleBgColor','bgTheme','fontStyles','city','weatherUnit','weatherProvider','weatherKey'],
   layout: ['layout'],
   agent: ['astrbotUrl','astrbotKey','astrbotSession'],
 };
@@ -410,6 +417,8 @@ function resetField(field, card) {
     case 'bubblePlaceholder': $('inp-placeholder').value = dv; break;
     case 'city': $('inp-city').value = dv; break;
     case 'weatherUnit': $('sel-unit').value = dv; break;
+    case 'weatherProvider': $('sel-weather-provider').value = dv; break;
+    case 'weatherKey': $('inp-weather-key').value = dv; break;
     case 'fontColors': $('col-time').value = dv.time; $('col-date').value = dv.date; $('col-weather').value = dv.weather; $('col-bubble').value = dv.bubble; break;
     case 'astrbotUrl': $('inp-astrbot-url').value = dv; break;
     case 'astrbotKey': $('inp-astrbot-key').value = dv; break;
@@ -458,6 +467,8 @@ function attachAllResets() {
   attachReset($('inp-placeholder'), 'bubblePlaceholder', 'display');
   attachReset($('inp-city'), 'city', 'display');
   attachReset($('sel-unit'), 'weatherUnit', 'display');
+  attachReset($('sel-weather-provider'), 'weatherProvider', 'display');
+  attachReset($('inp-weather-key'), 'weatherKey', 'display');
   attachReset($('col-time'), 'fontColors', 'display');
   attachReset($('inp-astrbot-url'), 'astrbotUrl', 'agent');
   attachReset($('inp-astrbot-key'), 'astrbotKey', 'agent');
@@ -489,7 +500,9 @@ function render() {
     $('sw-weather').checked = !!config.showWeather;
     $('sw-bubble').checked = !!config.showBubble;
     $('inp-city').value = config.city || '';
-    $('sel-unit').value = config.weatherUnit || 'c';
+      $('sel-unit').value = config.weatherUnit || 'c';
+      $('sel-weather-provider').value = config.weatherProvider || 'wttr';
+      $('inp-weather-key').value = config.weatherKey || '';
     $('inp-placeholder').value = config.bubblePlaceholder || '等待 agent 消息…';
     // 渲染 helper：读取配置值（带默认）并同步到 滑条/数值/文本 三元组
     const num = (val, d) => parseFloat(val) || d;
@@ -559,6 +572,8 @@ Object.entries(SWITCH_FIELDS).forEach(([id, field]) => {
 });
 $('inp-city').addEventListener('change', (e) => draftField('city', e.target.value.trim()));
 $('sel-unit').addEventListener('change', (e) => draftField('weatherUnit', e.target.value));
+$('sel-weather-provider').addEventListener('change', (e) => draftField('weatherProvider', e.target.value));
+$('inp-weather-key').addEventListener('change', (e) => draftField('weatherKey', e.target.value.trim()));
 $('inp-placeholder').addEventListener('change', (e) => draftField('bubblePlaceholder', e.target.value.trim() || '等待 agent 消息…'));
 // 速度滑条 + 数值输入联动
 function bindPair(sliderId, numId, onVal) {

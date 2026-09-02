@@ -70,6 +70,8 @@ let CONFIG = {
   showBubble: true,
   city: '',
   weatherUnit: 'c',
+  weatherProvider: 'wttr', // 天气源：wttr(海外默认) | amap(高德国内，需weatherKey)
+  weatherKey: '', // 高德天气 API Key（可选；配了则 wttr 失败自动降级高德）
   zoom: 1.43, // 模型缩放（管理后台可调，适配画布空白大的模型）
   bubbleScrollSpeed: 20, // 气泡循环滚动速度（px/s）
   bubbleHold: 0, // 气泡滞留秒数（0 = 一直显示，直到下一条消息替换）
@@ -124,16 +126,46 @@ async function updateWeather() {
   }
   const city = (CONFIG.city || '').trim()
   const unitFlag = CONFIG.weatherUnit === 'f' ? 'u' : 'm'
-  const url = `https://wttr.in/${encodeURIComponent(city || '')}?format=j1&${unitFlag}`
+  // 天气源可配：wttr（默认，海外）/ amap（高德，国内稳定，需 weatherKey）
+  const provider = CONFIG.weatherProvider || 'wttr'
+  let area = '', temp = '', desc = ''
   try {
-    const d = await (await fetch(url)).json()
-    const cur = d.current_condition?.[0]
-    if (!cur) throw new Error('no data')
-    const area = d.nearest_area?.[0]?.areaName?.[0]?.value || city || ''
-    const temp = CONFIG.weatherUnit === 'f' ? `${cur.temp_F}°F` : `${cur.temp_C}°C`
-    const desc = cur.weatherDesc?.[0]?.value || ''
-    weatherDisplay.textContent = `${area} · ${temp} · ${desc}`
+    if (provider === 'amap' && CONFIG.weatherKey) {
+      // 高德天气（国内秒通）：需 key；城市用 adcode 或城市名
+      const adcode = await (await fetch(`https://restapi.amap.com/v3/geocode/geo?key=${encodeURIComponent(CONFIG.weatherKey)}&address=${encodeURIComponent(city || '上海')}`)).json()
+      const loc = adcode.geocodes?.[0]
+      const d = await (await fetch(`https://restapi.amap.com/v3/weather/weatherInfo?key=${encodeURIComponent(CONFIG.weatherKey)}&city=${loc ? loc.adcode : ''}`)).json()
+      const cur = d.lives?.[0]
+      if (cur) {
+        area = cur.city || city || '未知'
+        temp = CONFIG.weatherUnit === 'f' ? `${Math.round(cur.temperature * 9 / 5 + 32)}°F` : `${cur.temperature}°C`
+        desc = cur.weather || ''
+      }
+    } else {
+      // wttr.in（默认）
+      const url = `https://wttr.in/${encodeURIComponent(city || '')}?format=j1&${unitFlag}`
+      const w = await (await fetch(url)).json()
+      const cur = w.current_condition?.[0]
+      if (cur) {
+        area = w.nearest_area?.[0]?.areaName?.[0]?.value || city || ''
+        temp = CONFIG.weatherUnit === 'f' ? `${cur.temp_F}°F` : `${cur.temp_C}°C`
+        desc = cur.weatherDesc?.[0]?.value || ''
+      }
+    }
+    if (temp) weatherDisplay.textContent = `${area} · ${temp} · ${desc}`
+    else throw new Error('no data')
   } catch {
+    // wttr 失败且配了高德 key 时自动降级高德
+    if (provider !== 'amap' && CONFIG.weatherKey) {
+      try {
+        const d = await (await fetch(`https://restapi.amap.com/v3/weather/weatherInfo?key=${encodeURIComponent(CONFIG.weatherKey)}&city=${encodeURIComponent(city || '')}`)).json()
+        const cur = d.lives?.[0]
+        if (cur) {
+          weatherDisplay.textContent = `${cur.city} · ${cur.temperature}°C · ${cur.weather}`
+          return
+        }
+      } catch { /* 高德也失败 */ }
+    }
     weatherDisplay.textContent = '天气不可用'
   }
 }
