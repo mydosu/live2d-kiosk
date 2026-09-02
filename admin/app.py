@@ -453,6 +453,34 @@ def bg_remove():
     return jsonify({"ok": True})
 
 
+@app.route("/api/geoip")
+def api_geoip():
+    """IP 定位代理（板子 IPv6 出口；高德 /v3/ip 对 IPv6 返回空，改用 myip.ipip.net 解析省市）"""
+    import re as _re
+    import urllib.request
+
+    try:
+        with urllib.request.urlopen("https://myip.ipip.net", timeout=8) as r:
+            text = r.read().decode("utf-8", errors="ignore")
+        # 格式：当前 IP：xxx  来自于：中国 贵州 贵阳  电信
+        m = _re.search(r"来自于：(.+)", text)
+        if not m:
+            return jsonify({"ok": False, "error": "无法解析定位结果"})
+        parts = [p for p in m.group(1).split() if p]
+        # parts 形如 ["中国","贵州","贵阳","电信"]；直辖市如 ["中国","上海","上海市","电信"]
+        if len(parts) >= 3 and parts[0] == "中国":
+            province, city = parts[1], parts[2]
+            # 直辖市省名=市名时（如"上海市"），返回去掉"市"的城市名
+            if province in ("北京", "上海", "天津", "重庆"):
+                city = province
+            elif city.endswith("市"):
+                city = city[:-1]
+            return jsonify({"ok": True, "province": province, "city": city})
+        return jsonify({"ok": False, "error": "定位信息不完整"})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)})
+
+
 @app.route("/api/poll")
 def api_poll():
     """页面轮询：拉取最近消息并清空"""

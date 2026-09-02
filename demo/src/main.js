@@ -124,24 +124,44 @@ async function fetchTimeout(url, ms = 6000) {
   }
 }
 async function fetchAmapWeather() {
-  // 高德天气：需 weatherKey；城市名直查，失败自动 IP 定位
+  // 高德天气：需 weatherKey；填了城市名直查，留空自动 IP 定位（走本地 /api/geoip 代理，兼容 IPv6 出口）
   const key = CONFIG.weatherKey
   if (!key) throw new Error('no amap key')
-  let city = (CONFIG.city || '').trim() || '上海'
-  let d = await fetchTimeout(`https://restapi.amap.com/v3/weather/weatherInfo?key=${encodeURIComponent(key)}&city=${encodeURIComponent(city)}&extensions=base`)
-  let cur = d.lives?.[0]
+  let city = (CONFIG.city || '').trim()
+  let cur = null
+  let area = ''
+  if (city) {
+    // 用户指定城市：直查（城市名/adcode 都支持）
+    const d = await fetchTimeout(`https://restapi.amap.com/v3/weather/weatherInfo?key=${encodeURIComponent(key)}&city=${encodeURIComponent(city)}&extensions=base`)
+    cur = d.lives?.[0]
+    if (cur) area = cur.city || city
+  } else {
+    // 城市留空 → 自动定位：请求板子本地代理（服务端用 myip.ipip.net 解析省市，兼容 IPv6 出口）
+    try {
+      const geo = await (await fetch(`${API_BASE}/api/geoip`)).json()
+      city = geo.city || ''
+      if (city) {
+        const d = await fetchTimeout(`https://restapi.amap.com/v3/weather/weatherInfo?key=${encodeURIComponent(key)}&city=${encodeURIComponent(city)}&extensions=base`)
+        cur = d.lives?.[0]
+        if (cur) area = cur.city || city
+      }
+    } catch { /* 定位失败则走下方 IP 定位兜底 */ }
+  }
   if (!cur) {
-    // 城市名定位失败 → IP 定位拿 adcode 再查
-    const ip = await fetchTimeout(`https://restapi.amap.com/v3/ip?key=${encodeURIComponent(key)}`)
-    const adcode = ip.adcode
-    if (adcode) {
-      d = await fetchTimeout(`https://restapi.amap.com/v3/weather/weatherInfo?key=${encodeURIComponent(key)}&city=${encodeURIComponent(adcode)}&extensions=base`)
-      cur = d.lives?.[0]
-    }
+    // 兜底：直接调高德 IP 定位（仅 IPv4 出口有效）
+    try {
+      const ip = await fetchTimeout(`https://restapi.amap.com/v3/ip?key=${encodeURIComponent(key)}`)
+      const adcode = ip.adcode
+      if (adcode) {
+        const d = await fetchTimeout(`https://restapi.amap.com/v3/weather/weatherInfo?key=${encodeURIComponent(key)}&city=${encodeURIComponent(adcode)}&extensions=base`)
+        cur = d.lives?.[0]
+        if (cur) area = cur.city || area
+      }
+    } catch { /* 忽略 */ }
   }
   if (!cur) throw new Error('amap no data')
   return {
-    area: cur.city || city,
+    area,
     temp: CONFIG.weatherUnit === 'f' ? `${Math.round(cur.temperature * 9 / 5 + 32)}°F` : `${cur.temperature}°C`,
     desc: cur.weather || '',
   }
