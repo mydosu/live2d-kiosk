@@ -144,6 +144,8 @@
     box-shadow:0 3px 10px rgba(255,111,159,.45); }
   .app.collapsed .nav-item:not(.active):hover .nav-ic { background:rgba(255,111,159,.12); }
   .app.collapsed .nav-ic svg { width:20px; height:20px; }
+  /* 侧边栏固定：不随主内容滚轮滚动（sticky + 视口高 + 防 stretch 拉伸） */
+  #sidebar { position:sticky; top:0; height:100vh; align-self:flex-start; }
   /* 键盘焦点光圈（全部可交互元素，保持可见焦点） */
   :focus { outline:none; }
   :focus-visible { outline:none; box-shadow:var(--focus-ring) !important; border-color:#ff8fb5 !important; }
