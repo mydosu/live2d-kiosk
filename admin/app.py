@@ -288,6 +288,10 @@ def api_wifi_disconnect():
 
 
 # ---------- 蓝牙管理（bluetoothctl） ----------
+# 后台扫描状态（边扫边显示）：线程内更新，API 实时读取
+BT_SCAN = {"scanning": False, "devices": []}
+
+
 def _bt(cmd, timeout=20):
     """运行 bluetoothctl 命令（--timeout 控制扫描时长），stdout 完整捕获
     注意：外层 subprocess 超时必须 > 命令时长，否则扫描输出在完成前被掐断"""
@@ -302,58 +306,95 @@ def _sh2(cmd, timeout=30):
         return None
 
 
-def bt_scan():
-    """扫描并收集设备（扫描 20s；空结果时重置 hci0 重扫一次），返回去重列表"""
+def _bt_parse_line(line, seen):
+    """从 bluetoothctl 输出行解析设备（支持 [NEW]/Device 行），返回是否新增"""
+    line = line.strip()
+    if "Device " not in line:
+        return False
+    idx = line.find("Device ")
+    parts = line[idx + len("Device "):].split()
+    if len(parts) < 1:
+        return False
+    mac = parts[0]
+    if mac in seen:
+        return False
+    seen[mac] = {"mac": mac, "name": " ".join(parts[1:]) or "(未命名)"}
+    return True
+
+
+def _bt_scan_background():
+    """后台扫描线程：Popen 逐行实时解析，设备边扫边收集"""
     _bt("power on")
-    # 注意：不调 agent on/default-agent——常驻 bt-agent 服务已注册默认 agent，
-    # bluetoothctl 会话里再注册会劫持并随进程退出释放，导致配对无人应答
-    r = _bt("--timeout 30 scan on", timeout=34)
-    _bt("scan off", timeout=3)
     seen = {}
-    # 从 scan 输出解析 NEW 行（含本次发现）
-    if r:
-        for line in r.stdout.splitlines():
-            line = line.strip()
-            if "Device " not in line:
-                continue
-            idx = line.find("Device ")
-            parts = line[idx + len("Device "):].split()
-            if len(parts) < 1:
-                continue
-            mac = parts[0]
-            name = " ".join(parts[1:])
-            if mac in seen:
-                continue
-            seen[mac] = {"mac": mac, "name": name or "(未命名)"}
+    try:
+        proc = subprocess.Popen(
+            ["bluetoothctl", "--timeout", "28", "scan", "on"],
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True,
+        )
+        # 实时读行直到扫描结束（--timeout 28 自动停止）
+        for line in proc.stdout:
+            _bt_parse_line(line, seen)
+    except Exception:
+        pass
+    finally:
+        try:
+            proc.kill()
+        except Exception:
+            pass
+        _bt("scan off", timeout=3)
     # 空结果：重置 hci0 重扫一次（aw859a UART 偶发扫描失灵）
     if not seen:
         _sh("sudo hciconfig hci0 reset 2>/dev/null; sleep 2")
-        _bt("--timeout 30 scan on", timeout=34)
-        _bt("scan off", timeout=3)
-    # 补充 devices 缓存
+        try:
+            proc2 = subprocess.Popen(
+                ["bluetoothctl", "--timeout", "28", "scan", "on"],
+                stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True,
+            )
+            for line in proc2.stdout:
+                _bt_parse_line(line, seen)
+        except Exception:
+            pass
+        finally:
+            try:
+                proc2.kill()
+            except Exception:
+                pass
+            _bt("scan off", timeout=3)
+    # 补充 devices 缓存（含已配对但未广播的设备）
     r2 = _bt("devices")
     if r2:
         for line in r2.stdout.splitlines():
-            line = line.strip()
-            if not line.startswith("Device "):
-                continue
-            parts = line.split()
-            if len(parts) < 3:
-                continue
-            mac = parts[1]
-            if mac in seen:
-                continue
-            seen[mac] = {"mac": mac, "name": " ".join(parts[2:]) or "(未命名)"}
-    return list(seen.values())
+            _bt_parse_line(line, seen)
+    BT_SCAN["devices"] = list(seen.values())
+    BT_SCAN["scanning"] = False
+
+
+def bt_scan():
+    """启动后台扫描（非阻塞，立即返回；设备实时写入 BT_SCAN）"""
+    if BT_SCAN["scanning"]:
+        return BT_SCAN["devices"]
+    BT_SCAN["scanning"] = True
+    BT_SCAN["devices"] = []
+    threading.Thread(target=_bt_scan_background, daemon=True).start()
+    return BT_SCAN["devices"]
 
 
 @app.route("/api/bt/scan", methods=["GET"])
 def api_bt_scan():
     try:
         devices = bt_scan()
-        return jsonify({"devices": devices})
+        return jsonify({"scanning": BT_SCAN["scanning"], "devices": devices})
     except Exception as e:
         return jsonify({"error": f"蓝牙扫描失败: {e}", "devices": []})
+
+
+@app.route("/api/bt/devices", methods=["GET"])
+def api_bt_devices():
+    """边扫边显示：实时返回当前扫描状态与已发现设备"""
+    try:
+        return jsonify({"scanning": BT_SCAN["scanning"], "devices": BT_SCAN["devices"]})
+    except Exception as e:
+        return jsonify({"error": f"获取设备失败: {e}", "devices": []})
 
 
 @app.route("/api/bt/connect", methods=["POST"])

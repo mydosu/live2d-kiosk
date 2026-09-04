@@ -1075,25 +1075,37 @@ async function refreshBtStatus() {
 }
 $('btn-bt-scan').addEventListener('click', async () => {
   $('btn-bt-scan').disabled = true;
-  toast('正在扫描蓝牙设备…');
+  $('btn-bt-scan').textContent = '扫描中…';
+  toast('正在扫描蓝牙设备…（实时显示发现的设备）');
   try {
-    const r = await fetch(API + '/api/bt/scan').then(x => x.json());
-    const sel = $('sel-bt');
-    sel.innerHTML = '';
-    if (r.error || !r.devices || !r.devices.length) {
-      sel.innerHTML = '<option>未发现蓝牙设备</option>';
-      if (r.error) toast(r.error);
-    } else {
-      r.devices.forEach(d => {
-        const o = document.createElement('option');
-        o.value = d.mac;
-        o.textContent = `${d.name}  (${d.mac})`;
-        sel.appendChild(o);
-      });
-      toast('发现 ' + r.devices.length + ' 个设备');
-    }
-  } catch { toast('扫描失败'); }
-  $('btn-bt-scan').disabled = false;
+    await fetch(API + '/api/bt/scan').then(x => x.json());
+  } catch { /* 扫描已启动或失败，轮询会体现 */ }
+  const sel = $('sel-bt');
+  let lastMac = sel.value; // 保留当前选中
+  const timer = setInterval(async () => {
+    try {
+      const r = await fetch(API + '/api/bt/devices').then(x => x.json());
+      const devs = r.devices || [];
+      sel.innerHTML = '';
+      if (!devs.length) {
+        sel.innerHTML = '<option>扫描中…（尚未发现设备）</option>';
+      } else {
+        devs.forEach(d => {
+          const o = document.createElement('option');
+          o.value = d.mac;
+          o.textContent = `${d.name}  (${d.mac})`;
+          sel.appendChild(o);
+        });
+        if (devs.some(d => d.mac === lastMac)) sel.value = lastMac;
+      }
+      if (!r.scanning) {
+        clearInterval(timer);
+        $('btn-bt-scan').disabled = false;
+        $('btn-bt-scan').textContent = '扫描';
+        toast(devs.length ? `扫描完成，发现 ${devs.length} 个设备` : '扫描完成，未发现设备');
+      }
+    } catch { /* 网络抖动忽略，继续轮询 */ }
+  }, 2000);
 });
 $('btn-bt-connect').addEventListener('click', async () => {
   const mac = $('sel-bt').value;
