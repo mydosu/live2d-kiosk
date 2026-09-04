@@ -301,6 +301,8 @@ const API_BASE = `${location.protocol}//${location.hostname || 'localhost'}:8080
 const FLOW_ORDER = ['time-block', 'date-display', 'weather-display', 'wifi-status', 'bt-status', 'chat-bubble']
 let flowComp = {} // { id: translateY补偿px }
 let flowMeasured = false
+let flowBase = {} // 首次锁定的基准流位置（排版基准）
+let flowBaseLocked = false
 
 function measureFlow(forceShowAll) {
   // 返回各模块相对 panel 内容区的流位置 top（不含 transform）
@@ -330,17 +332,59 @@ function measureFlow(forceShowAll) {
 }
 
 function recomputeFlowComp() {
-  const base = measureFlow(true)  // 全部显示基准（用户排版基准）
-  const cur = measureFlow(false)  // 当前显隐
+  const cur = measureFlow(false) // 当前显隐/内容的流位置
   const comp = {}
   FLOW_ORDER.forEach(id => {
-    const b = base[id], c = cur[id]
+    const b = flowBase[id], c = cur[id]
     if (b === undefined || c === undefined) return
     comp[id] = b - c // 视觉位置 = 流位置 + (layout.y + comp)；保持 = 基准流位置 + layout.y → comp = base - cur
   })
   flowComp = comp
   flowMeasured = true
   applyLayout()
+}
+
+/* 锁定基准：以"气泡占位文本"测量（与气泡当前真实内容无关）。
+ * 气泡内容（占位 vs 真实消息）高度不同 → flex 列高/居中偏移不同 → 流位置不同。
+ * 若基准随内容漂移，预览（占位）与屏幕（有消息）基准不一致 → 同一 layout.y 两端位置不同。
+ * 锁定基准用占位文本测，两端一致；之后消息到达，气泡顶部视觉位置保持 = 基准 + y（transform-origin top 不动）。
+ */
+function lockFlowBase() {
+  if (flowBaseLocked) return
+  const bubble = document.getElementById('chat-bubble')
+  let savedText = null
+  if (bubble) {
+    savedText = bubble.textContent
+    bubble.textContent = CONFIG.bubblePlaceholder || '等待 agent 消息…' // 占位高度测基准
+  }
+  flowBase = measureFlow(false)
+  flowBaseLocked = true
+  if (bubble && savedText !== null) bubble.textContent = savedText
+  recomputeFlowComp()
+}
+
+/* 自动重算：任何模块尺寸变化（天气异步加载/连接状态文本/气泡消息/字体就绪）
+ * 都会改变 flex 列高与居中偏移 → 流位置变 → 补偿需跟随。
+ * 用 ResizeObserver 监听全部模块，变化即重算（rAF 合并防抖）。
+ */
+let flowRecalcPending = false
+let flowObserverReady = false
+function scheduleFlowRecalc() {
+  if (flowRecalcPending) return
+  flowRecalcPending = true
+  requestAnimationFrame(() => {
+    flowRecalcPending = false
+    if (flowMeasured) recomputeFlowComp()
+  })
+}
+function initFlowObserver() {
+  if (flowObserverReady || typeof ResizeObserver === 'undefined') return
+  flowObserverReady = true
+  FLOW_ORDER.forEach(id => {
+    const el = document.getElementById(id)
+    if (!el) return
+    new ResizeObserver(scheduleFlowRecalc).observe(el)
+  })
 }
 
 function applyDisplayConfig() {
@@ -382,7 +426,8 @@ function applyDisplayConfig() {
   applyLayout()
   applyBg()
   applyBubbleBg()
-  applyFont().then(() => recomputeFlowComp()) // 字体就绪后流位置稳定再测基准（applyFont 内部 await fonts.ready）
+  applyFont().then(() => { flowBaseLocked ? recomputeFlowComp() : lockFlowBase() }) // 字体就绪：首次锁定基准（占位测），后续重算
+  initFlowObserver() // 监听模块尺寸变化（天气/连接状态异步内容）→ 自动重算补偿
   // 缩放/布局配置变化时重新适配模型（模型不变则不重载）
   if (sprite) fitSprite(sprite, realModelSize)
 }
@@ -493,6 +538,8 @@ async function applyFont() {
   } catch { /* 忽略 */ }
   if (seq !== fontApplySeq) return
   if (flowMeasured) recomputeFlowComp()
+  // 首次锁定基准需等异步内容（天气/连接状态）就绪——RO 会在后续尺寸变化时重算；
+  // 若首帧就锁定会测到 "--"/占位高度，气泡位置后续不再跟随内容漂移（锁定即排版基准）
 }
 
 // 气泡背景：用户色 → 半透明磨砂渐变（与主体背景不冲突）
