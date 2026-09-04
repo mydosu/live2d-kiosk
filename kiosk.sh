@@ -93,5 +93,5 @@ exec dbus-run-session -- /usr/bin/chromium \
   --window-size=480,640 \
   --window-position=0,0 \
   --check-for-update-interval=31536000 \
-  "http://localhost:80/?kiosk=1&v=20260826" > /tmp/kiosk-chromium.log 2>&1
+  "http://localhost:80/?kiosk=1&v=20260902b" > /tmp/kiosk-chromium.log 2>&1
 '
