@@ -890,13 +890,15 @@ function initPreview() {
     }
 
     // 统一指针交互：边缘/角→缩放（全方位），内部→移动
+    // 交互绑在虚线框（box）上而非元素本身：时间/日期/天气是块级被 flex 拉伸到整行宽，
+    // 绑元素会导致虚线框外（文字右侧空白）也能拖动——绑框 = 所见即所得
     let gesture = null // { mode:'move'|'resize', px,py, ox,oy, s0, edge }
     // 悬停模块 → 边框高亮提示可缩放
-    el.addEventListener('pointerenter', () => box.classList.add('pv-hover'))
-    el.addEventListener('pointerleave', () => box.classList.remove('pv-hover'))
-    el.addEventListener('pointerdown', (e) => {
+    box.addEventListener('pointerenter', () => box.classList.add('pv-hover'))
+    box.addEventListener('pointerleave', () => box.classList.remove('pv-hover'))
+    box.addEventListener('pointerdown', (e) => {
       e.preventDefault()
-      el.setPointerCapture(e.pointerId)
+      box.setPointerCapture(e.pointerId)
       const v = CONFIG.layout?.[m.key] || { x: 0, y: 0, scale: 1 }
       const rect = box.getBoundingClientRect() // 用虚线框（el 实际渲染矩形）做边缘检测——所见即所得
       // 识别四角（dx 且 dy 都 ≤ EDGE）→ 缩放；其余一律移动。
@@ -914,7 +916,6 @@ function initPreview() {
           s0: Number(v.scale) || 1,
           corner: h + vv,
         }
-        el.classList.add('pv-resizing')
         box.classList.add('pv-resizing')
       } else {
         // 移动模式
@@ -958,13 +959,12 @@ function initPreview() {
       }
       const up = () => {
         gesture = null
-        el.classList.remove('pv-resizing')
         box.classList.remove('pv-resizing')
-        el.removeEventListener('pointermove', move)
-        el.removeEventListener('pointerup', up)
+        box.removeEventListener('pointermove', move)
+        box.removeEventListener('pointerup', up)
       }
-      el.addEventListener('pointermove', move)
-      el.addEventListener('pointerup', up)
+      box.addEventListener('pointermove', move)
+      box.addEventListener('pointerup', up)
     })
     syncBox()
   }
