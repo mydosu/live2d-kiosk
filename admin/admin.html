@@ -118,7 +118,7 @@
   .rst:hover { background:rgba(255,111,159,.12); color:var(--accent); }
   .hidden { display:none; }
   .bottom-btns { display:flex; flex-direction:column; gap:10px; margin-top:16px; }
-  /* ---------- 界面排版：屏幕实时预览（横屏 4:3，内容横着显示无旋转，填满无黑边） ---------- */
+  /* ---------- 界面排版：屏幕实时预览（横屏 4:3 内容横着显示；面板宽度已统一 viewport 基准，预览与屏幕位置一致） ---------- */
   .layout-preview-wrap { display:flex; flex-direction:column; gap:14px; margin-bottom:6px; }
   .layout-preview { position:relative; flex-shrink:0; width:100%; max-width:560px; margin:0 auto; aspect-ratio:4/3; border-radius:14px; overflow:hidden; box-shadow:0 6px 24px rgba(90,40,90,.18); border:1px solid rgba(255,255,255,.7); background:#0d0d18; }
   .layout-preview iframe { position:absolute; top:0; left:0; width:800px; height:600px; border:none; transform:scale(var(--pv-scale,0.65)); transform-origin:top left; }

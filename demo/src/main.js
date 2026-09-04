@@ -398,7 +398,7 @@ function applyLayout() {
     if (!el) return
     const v = L[k] || { x: 0, y: 0, scale: 1 }
     const sx = Number(v.scale) || 1
-    const target = el.querySelector?.('.pv-wrap') || el // 预览模式：transform 套在包裹层上
+    const target = el // 预览/正常模式统一：transform 直接挂在模块自身（无 wrap 层，布局与 kiosk 完全一致）
     target.style.transform = `translate(${Number(v.x) || 0}px, ${Number(v.y) || 0}px) scale(${sx})`
     if (id === 'chat-bubble') el.style.setProperty('--bubble-scale', sx) // 气泡宽度/高度随缩放反比（不覆盖模型/面板）
   }
@@ -516,12 +516,13 @@ async function initApp() {
     // 超时保护：极端环境下 Pixi 初始化可能挂起，便于诊断而非白屏
     // canvas 尺寸固定为屏幕物理尺寸（window.screen）：
     // 部分 kiosk 环境（无 WM 的 X11）Chromium viewport 会溢出屏幕，
-    // 用 screen 尺寸保证模型居中在屏幕可见区域
-    const SW = window.screen.width || window.innerWidth
-    const SH = window.screen.height || window.innerHeight
-    // 左侧面板宽度 = 物理屏幕一半（viewport 可能溢出，% 会错位）
+    // 统一布局基准：左侧面板宽度固定 = viewport 一半（400px）。
+    // 注意：不能用 window.screen.width——kiosk 里是 640（xrandr rotate 后逻辑分辨率），
+    // 预览 iframe 里是 800（Chromium 默认），会导致 kiosk 面板 320px vs 预览 400px 错位。
+    const SW = 800 // 布局画布宽（viewport 恒 800x600）
+    const SH = 600
     const panelEl = $('side-panel')
-    if (panelEl) panelEl.style.width = Math.round(SW / 2) + 'px'
+    if (panelEl) panelEl.style.width = Math.round(SW / 2) + 'px' // 400px
     await Promise.race([
       app.init({
         canvas: $('live2d'),
@@ -741,7 +742,7 @@ if (IS_PREVIEW) {
 }
 
 /* ================= 预览模式：拖拽 / 缩放 / 与后台同步（?preview=1） ================= */
-// 每个模块包一层 .pv-wrap（放 transform + 标签 + 缩放手柄），避免覆盖模块自身样式
+// 交互直接挂在模块自身（不包裹额外层，DOM 与 kiosk 一致 → 布局/位置一致）
 /* 预览模式：可拖拽/缩放模块（模型无占位框，位置大小由后台滑条调节） */
 const PV_MODULES = [
   { id: 'time-block', key: 'time', name: '时间' },
@@ -769,17 +770,12 @@ function initPreview() {
   if (chatBubble.classList.contains('empty')) {
     chatBubble.textContent = CONFIG.bubblePlaceholder || '等待 agent 消息…'
   }
-  // 为每个模块包裹 .pv-wrap + 精确虚线框 overlay（getBoundingClientRect 实时测量，字体/缩放自适应）
-  const EDGE = 10 // 边缘阈值 px：按下点距 wrap 边缘 ≤ 此值 → 缩放模式
+  // 为每个模块挂交互（不包裹额外层，DOM 与 kiosk 一致 → 布局位置一致）
+  const EDGE = 10 // 边缘阈值 px：按下点距模块边缘 ≤ 此值 → 缩放模式
   for (const m of PV_MODULES) {
     const el = $(m.id)
     if (!el) continue
-    if (el.querySelector('.pv-wrap')) continue
-    const wrap = document.createElement('div')
-    wrap.className = 'pv-wrap'
-    el.parentNode.insertBefore(wrap, el)
-    wrap.appendChild(el)
-    // 虚线框 overlay：fixed 挂 body，直接用 viewport 坐标精确贴合模块渲染矩形（不受 wrap transform 缩放影响）
+    // 虚线框 overlay：fixed 挂 body，直接用 viewport 坐标精确贴合模块渲染矩形
     const box = document.createElement('div')
     box.className = 'pv-box'
     document.body.appendChild(box)
@@ -802,11 +798,11 @@ function initPreview() {
     // 统一指针交互：边缘/角→缩放（全方位），内部→移动
     let gesture = null // { mode:'move'|'resize', px,py, ox,oy, s0, edge }
     // 悬停模块 → 边框高亮提示可缩放
-    wrap.addEventListener('pointerenter', () => box.classList.add('pv-hover'))
-    wrap.addEventListener('pointerleave', () => box.classList.remove('pv-hover'))
-    wrap.addEventListener('pointerdown', (e) => {
+    el.addEventListener('pointerenter', () => box.classList.add('pv-hover'))
+    el.addEventListener('pointerleave', () => box.classList.remove('pv-hover'))
+    el.addEventListener('pointerdown', (e) => {
       e.preventDefault()
-      wrap.setPointerCapture(e.pointerId)
+      el.setPointerCapture(e.pointerId)
       const v = CONFIG.layout?.[m.key] || { x: 0, y: 0, scale: 1 }
       const rect = box.getBoundingClientRect() // 用虚线框（el 实际渲染矩形）做边缘检测——所见即所得
       // 识别最近边缘/角（八个方向）：距某边 ≤ EDGE → 缩放；否则移动
@@ -823,7 +819,7 @@ function initPreview() {
           edge: (minD === dxL || minD === dxR) ? (minD === dxL ? 'L' : 'R') : (minD === dyT ? 'T' : 'B'),
           corner: minD === dxL || minD === dxR ? (minD === dyT || minD === dyB ? h + vv : null) : null,
         }
-        wrap.classList.add('pv-resizing')
+        el.classList.add('pv-resizing')
         box.classList.add('pv-resizing')
       } else {
         // 移动模式
@@ -867,13 +863,13 @@ function initPreview() {
       }
       const up = () => {
         gesture = null
-        wrap.classList.remove('pv-resizing')
+        el.classList.remove('pv-resizing')
         box.classList.remove('pv-resizing')
-        wrap.removeEventListener('pointermove', move)
-        wrap.removeEventListener('pointerup', up)
+        el.removeEventListener('pointermove', move)
+        el.removeEventListener('pointerup', up)
       }
-      wrap.addEventListener('pointermove', move)
-      wrap.addEventListener('pointerup', up)
+      el.addEventListener('pointermove', move)
+      el.addEventListener('pointerup', up)
     })
     syncBox()
   }

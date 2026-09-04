@@ -135,16 +135,8 @@
 
       /* ---------- 预览模式（后台排版页 iframe：?preview=1） ---------- */
       body.preview-mode #side-panel { pointer-events: auto; }
-      /* 预览包裹层：贴合模块内容尺寸（拖边框=缩放，拖内部=移动） */
-      body.preview-mode .pv-wrap {
-        position: relative;
-        width: fit-content;
-        max-width: 100%;
-        align-self: flex-start; /* 防 flex 水平拉伸（side-panel 是 column 布局） */
-        cursor: move;
-        touch-action: none;
-        user-select: none;
-      }
+      /* 预览不包裹额外层（DOM 与 kiosk 一致 → flex 布局/位置一致），交互直接挂在模块自身 */
+      body.preview-mode #side-panel > * { cursor: move; touch-action: none; user-select: none; }
       /* 虚线框 overlay：fixed 于 body，getBoundingClientRect 实时测量模块实际渲染位置（viewport 坐标直接对齐，不受 wrap transform 影响） */
       body.preview-mode .pv-box {
         position: fixed;
