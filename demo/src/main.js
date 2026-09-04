@@ -290,57 +290,6 @@ async function fetchModels() {
 // 管理后台地址：同主机名，端口 8080
 const API_BASE = `${location.protocol}//${location.hostname || 'localhost'}:8080`
 
-/* ---------------- 模块定位固定（pin）----------------
- * side-panel 是 flex 列：隐藏任一模块（如 WiFi/蓝牙）后流变短 + flex 居中，
- * 其他模块（尤其气泡）整体位移——而 transform 偏移不变 → 位置错位。
- * 解决：加载时按"全部显示"的流位置把每个模块转为绝对定位（pin），
- * 之后任何模块显隐都互不影响，气泡永远停在排版时的位置。
- * 注意：必须在字体就绪后测量（高度稳定）；用 offsetTop（相对 panel，已含 gap/margin 效果）。
- */
-const FLOW_ORDER = ['time-block', 'date-display', 'weather-display', 'wifi-status', 'bt-status', 'chat-bubble']
-let modulesPinned = false
-async function pinModules() {
-  if (modulesPinned) return
-  const panel = $('side-panel')
-  if (!panel) return
-  // 等字体就绪再测量（高度稳定，避免字体加载后行高变化导致位置漂移）
-  try { await Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 3000))]) } catch { /* 忽略 */ }
-  if (modulesPinned) return
-  const saved = {}, savedT = {}
-  const tops = {}
-  // 1) 临时全部显示 + 去掉 transform，测量流位置（offsetTop 相对 panel 内容区，含 gap/margin 效果）
-  FLOW_ORDER.forEach(id => {
-    const el = document.getElementById(id)
-    if (!el) return
-    saved[id] = el.style.display
-    savedT[id] = el.style.transform
-    if (el.style.display === 'none') el.style.display = ''
-    el.style.transform = 'none'
-  })
-  FLOW_ORDER.forEach(id => {
-    const el = document.getElementById(id)
-    if (el) tops[id] = el.offsetTop
-  })
-  // 2) 恢复显隐与 transform
-  FLOW_ORDER.forEach(id => {
-    const el = document.getElementById(id)
-    if (!el) return
-    el.style.display = saved[id]
-    el.style.transform = savedT[id]
-  })
-  // 3) 绝对定位（top 已含原 margin/gap 效果，清除 margin 避免叠加偏移）
-  FLOW_ORDER.forEach(id => {
-    const el = document.getElementById(id)
-    if (!el) return
-    el.style.position = 'absolute'
-    el.style.left = '0px'
-    el.style.top = tops[id] + 'px'
-    el.style.marginTop = '0px'
-  })
-  modulesPinned = true
-  applyLayout() // 重新应用 transform（x/y/scale 基准不变）
-}
-
 function applyDisplayConfig() {
   const t = $('side-panel')
   if (!t) return
@@ -381,7 +330,6 @@ function applyDisplayConfig() {
   applyBg()
   applyBubbleBg()
   applyFont()
-  pinModules() // 一次性：模块转绝对定位，之后显隐互不影响（气泡不随 wifi/bt 隐藏错位）
   // 缩放/布局配置变化时重新适配模型（模型不变则不重载）
   if (sprite) fitSprite(sprite, realModelSize)
 }
