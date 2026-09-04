@@ -294,17 +294,37 @@ def _bt(cmd, timeout=20):
 
 
 def bt_scan():
-    """扫描并收集设备（扫描 6s），返回去重列表"""
+    """扫描并收集设备（扫描 20s；空结果时重置 hci0 重扫一次），返回去重列表"""
     _bt("power on")
-    _bt("agent on")
-    _bt("default-agent")
-    _bt("scan on", timeout=7)
-    # 收集 device 列表（scan on 输出到 stdout，另取 devices 确保全量）
+    # 注意：不调 agent on/default-agent——常驻 bt-agent 服务已注册默认 agent，
+    # bluetoothctl 会话里再注册会劫持并随进程退出释放，导致配对无人应答
+    r = _bt("--timeout 30 scan on", timeout=34)
     _bt("scan off", timeout=3)
-    r = _bt("devices")
     seen = {}
+    # 从 scan 输出解析 NEW 行（含本次发现）
     if r:
         for line in r.stdout.splitlines():
+            line = line.strip()
+            if "Device " not in line:
+                continue
+            idx = line.find("Device ")
+            parts = line[idx + len("Device "):].split()
+            if len(parts) < 1:
+                continue
+            mac = parts[0]
+            name = " ".join(parts[1:])
+            if mac in seen:
+                continue
+            seen[mac] = {"mac": mac, "name": name or "(未命名)"}
+    # 空结果：重置 hci0 重扫一次（aw859a UART 偶发扫描失灵）
+    if not seen:
+        _sh("sudo hciconfig hci0 reset 2>/dev/null; sleep 2")
+        _bt("--timeout 30 scan on", timeout=34)
+        _bt("scan off", timeout=3)
+    # 补充 devices 缓存
+    r2 = _bt("devices")
+    if r2:
+        for line in r2.stdout.splitlines():
             line = line.strip()
             if not line.startswith("Device "):
                 continue
@@ -312,10 +332,9 @@ def bt_scan():
             if len(parts) < 3:
                 continue
             mac = parts[1]
-            name = " ".join(parts[2:])
             if mac in seen:
                 continue
-            seen[mac] = {"mac": mac, "name": name or "(未命名)"}
+            seen[mac] = {"mac": mac, "name": " ".join(parts[2:]) or "(未命名)"}
     return list(seen.values())
 
 
@@ -335,8 +354,7 @@ def api_bt_connect():
     if not mac:
         return jsonify({"error": "缺少设备 MAC"}), 400
     _bt("power on")
-    _bt("agent on")
-    _bt("default-agent")
+    # 不调 agent on/default-agent（常驻 bt-agent 服务已注册默认 agent，劫持会破坏配对）
     _bt(f"pair {mac}", timeout=30)
     _bt(f"trust {mac}", timeout=10)
     _bt(f"connect {mac}", timeout=30)
