@@ -290,59 +290,6 @@ async function fetchModels() {
 // 管理后台地址：同主机名，端口 8080
 const API_BASE = `${location.protocol}//${location.hostname || 'localhost'}:8080`
 
-/* ---------------- 模块显隐流补偿（flow-comp）----------------
- * side-panel 是 flex 列：隐藏任一模块（如 WiFi/蓝牙）后流变短 + flex 居中，
- * 其他模块（尤其气泡）整体位移——而 transform 偏移不变 → 位置错位。
- * 方案：不改变布局结构。每次显隐变化时，测量"全部显示"的基准流位置，
- * 与当前状态的流位置做差，把差值叠加到各模块 transform 的 translateY 上——
- * 视觉位置保持不变，任何模块显隐互不影响。
- * 注意：测量用 visibility 占位（不破坏 display:none 的实际显隐）。
- */
-const FLOW_ORDER = ['time-block', 'date-display', 'weather-display', 'wifi-status', 'bt-status', 'chat-bubble']
-let flowComp = {} // { id: translateY补偿px }
-let flowMeasured = false
-
-function measureFlow(forceShowAll) {
-  // 返回各模块相对 panel 内容区的流位置 top（不含 transform）
-  const tops = {}
-  const vis = {}
-  FLOW_ORDER.forEach(id => {
-    const el = document.getElementById(id)
-    if (!el) return
-    vis[id] = el.style.display
-    el.style.transform = 'none'
-    if (forceShowAll) {
-      // 用 visibility 占位测量"全部显示"基准（display:none 的模块改为占位，位置与显示一致）
-      if (el.style.display === 'none') { el.style.display = ''; el.style.visibility = 'hidden' }
-    }
-  })
-  FLOW_ORDER.forEach(id => {
-    const el = document.getElementById(id)
-    if (el) tops[id] = el.offsetTop
-  })
-  FLOW_ORDER.forEach(id => {
-    const el = document.getElementById(id)
-    if (!el) return
-    el.style.display = vis[id]
-    if (forceShowAll) el.style.visibility = ''
-  })
-  return tops
-}
-
-function recomputeFlowComp() {
-  const base = measureFlow(true)  // 全部显示基准（用户排版基准）
-  const cur = measureFlow(false)  // 当前显隐
-  const comp = {}
-  FLOW_ORDER.forEach(id => {
-    const b = base[id], c = cur[id]
-    if (b === undefined || c === undefined) return
-    comp[id] = b - c // 视觉位置 = 流位置 + (layout.y + comp)；保持 = 基准流位置 + layout.y → comp = base - cur
-  })
-  flowComp = comp
-  flowMeasured = true
-  applyLayout()
-}
-
 function applyDisplayConfig() {
   const t = $('side-panel')
   if (!t) return
@@ -382,7 +329,7 @@ function applyDisplayConfig() {
   applyLayout()
   applyBg()
   applyBubbleBg()
-  applyFont().then(() => recomputeFlowComp()) // 字体就绪后流位置稳定再测基准（applyFont 内部 await fonts.ready）
+  applyFont()
   // 缩放/布局配置变化时重新适配模型（模型不变则不重载）
   if (sprite) fitSprite(sprite, realModelSize)
 }
@@ -487,12 +434,6 @@ async function applyFont() {
   if (chatBubble) chatBubble.style.fontFamily = pick('bubble')
   if (wifiStatus) wifiStatus.style.fontFamily = pick('wifi')
   if (btStatus) btStatus.style.fontFamily = pick('bt')
-  // 字体就绪后流位置稳定，重算流补偿（避免字体加载前后行高变化导致基准漂移）
-  try {
-    await Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 3000))])
-  } catch { /* 忽略 */ }
-  if (seq !== fontApplySeq) return
-  if (flowMeasured) recomputeFlowComp()
 }
 
 // 气泡背景：用户色 → 半透明磨砂渐变（与主体背景不冲突）
@@ -510,7 +451,6 @@ function applyBubbleBg() {
 }
 
 // 模块自由排版：按 layout 配置设置每个模块的偏移与缩放（transform）
-// 叠加 flowComp 流补偿：显隐变化时保持视觉位置不变（translateY 加补偿）
 function applyLayout() {
   const L = CONFIG.layout || {}
   const set = (id, k) => {
@@ -518,9 +458,8 @@ function applyLayout() {
     if (!el) return
     const v = L[k] || { x: 0, y: 0, scale: 1 }
     const sx = Number(v.scale) || 1
-    const comp = flowMeasured ? (flowComp[id] || 0) : 0
     const target = el // 预览/正常模式统一：transform 直接挂在模块自身（无 wrap 层，布局与 kiosk 完全一致）
-    target.style.transform = `translate(${Number(v.x) || 0}px, ${(Number(v.y) || 0) + comp}px) scale(${sx})`
+    target.style.transform = `translate(${Number(v.x) || 0}px, ${Number(v.y) || 0}px) scale(${sx})`
     if (id === 'chat-bubble') el.style.setProperty('--bubble-scale', sx) // 气泡宽度/高度随缩放反比（不覆盖模型/面板）
   }
   set('time-block', 'time')
