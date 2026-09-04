@@ -963,15 +963,6 @@ function pvEmit() {
 
 function pvApply(key) {
   applyLayout() // 文字模块（含包裹层 transform）
-  if (key === 'model') applyModelPlaceholder()
-}
-
-function applyModelPlaceholder() {
-  const mp = $('model-placeholder')
-  if (!mp) return
-  const v = CONFIG.layout?.model || { x: 0, y: 0, scale: 1 }
-  const sx = Number(v.scale) || 1
-  mp.style.transform = `translate(calc(-50% + ${Number(v.x) || 0}px), calc(-50% + ${Number(v.y) || 0}px)) scale(${sx})`
 }
 
 function initPreview() {
@@ -986,9 +977,6 @@ function initPreview() {
   if (chatBubble.classList.contains('empty')) {
     chatBubble.textContent = CONFIG.bubblePlaceholder || '等待 agent 消息…'
   }
-  // 模型占位框初始位置（右半区域中心）
-  applyModelPlaceholder()
-
   // 为每个模块包裹 .pv-wrap + 标签 + 缩放手柄
   for (const m of PV_MODULES) {
     const el = $(m.id)
@@ -1065,7 +1053,6 @@ function initPreview() {
     if (d.type === 'preview-sync' && d.layout) {
       CONFIG.layout = { ...(CONFIG.layout || {}), ...d.layout }
       applyLayout()
-      applyModelPlaceholder()
     }
   })
 
