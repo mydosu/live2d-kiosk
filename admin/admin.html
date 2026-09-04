@@ -473,6 +473,8 @@ async function saveCard(card, fields) {
   Object.assign(config, body);
   clearDirty(card);
   toast('已保存，屏幕将立即更新');
+  // 保存成功后立即同步预览 iframe（postMessage 直达，不走 poll——poll 消息会被 kiosk/预览竞争消费导致延迟）
+  if (card === 'layout') syncLayoutPreview();
 }
 const SAVE_FIELDS = {
   src: ['infoSource'],

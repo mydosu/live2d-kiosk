@@ -418,7 +418,7 @@ function initPoll() {
     } catch { /* ignore */ }
   }
   poll()
-  setInterval(poll, 2000) // 2s 轮询（轻量，不影响渲染帧率）
+  setInterval(poll, 1000) // 1s 轮询（保存后更快生效；轻量，不影响渲染帧率）
 }
 
 function handleWSMessage(msg) {
@@ -746,7 +746,8 @@ if (IS_PREVIEW) {
 // 交互直接挂在模块自身（不包裹额外层，DOM 与 kiosk 一致 → 布局/位置一致）
 /* 预览模式：可拖拽/缩放模块（模型无占位框，位置大小由后台滑条调节） */
 const PV_MODULES = [
-  { id: 'time-block', key: 'time', name: '时间' },
+  // measure：虚线框测量目标（文字内容元素）——模块本身被 flex 拉伸到面板宽，测文字才贴合所见
+  { id: 'time-block', key: 'time', name: '时间', measure: '#time-display' },
   { id: 'date-display', key: 'date', name: '日期' },
   { id: 'weather-display', key: 'weather', name: '天气' },
   { id: 'chat-bubble', key: 'bubble', name: '气泡' },
@@ -781,9 +782,19 @@ function initPreview() {
     box.className = 'pv-box'
     document.body.appendChild(box)
 
-    // 同步 box 位置：模块 getBoundingClientRect（viewport 坐标）→ box fixed 定位
+    // 同步 box 位置：测量目标 = 文字内容元素（time 用内部 #time-display；其余模块自身即文字，
+    // 但也被 flex 拉伸——用 Range 选文字实际边界，框贴合可见文字而非整块拉伸区域）
     const syncBox = () => {
-      const er = el.getBoundingClientRect()
+      let er
+      if (m.measure) {
+        const inner = el.querySelector(m.measure)
+        er = inner ? inner.getBoundingClientRect() : el.getBoundingClientRect()
+      } else {
+        const rg = document.createRange()
+        rg.selectNodeContents(el)
+        const rr = rg.getBoundingClientRect()
+        er = rr.width > 0 ? rr : el.getBoundingClientRect()
+      }
       box.style.left = er.left + 'px'
       box.style.top = er.top + 'px'
       box.style.width = er.width + 'px'
@@ -793,6 +804,8 @@ function initPreview() {
     if (typeof ResizeObserver !== 'undefined') {
       const ro = new ResizeObserver(syncBox)
       ro.observe(el)
+      const inner = m.measure ? el.querySelector(m.measure) : null
+      if (inner) ro.observe(inner) // 文字元素变化（宽度/字号）时 box 同步贴合
       m.__ro = ro
     }
 
