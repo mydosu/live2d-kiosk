@@ -783,12 +783,6 @@ function initPreview() {
     const box = document.createElement('div')
     box.className = 'pv-box'
     document.body.appendChild(box)
-    // 四角圆点指示器（提示任意角/边缘可拖拽缩放）
-    for (const pos of ['tl', 'tr', 'bl', 'br']) {
-      const dot = document.createElement('div')
-      dot.className = 'pv-dot ' + pos
-      box.appendChild(dot)
-    }
 
     // 同步 box 位置：模块 getBoundingClientRect（viewport 坐标）→ box fixed 定位
     const syncBox = () => {
@@ -807,6 +801,9 @@ function initPreview() {
 
     // 统一指针交互：边缘/角→缩放（全方位），内部→移动
     let gesture = null // { mode:'move'|'resize', px,py, ox,oy, s0, edge }
+    // 悬停模块 → 边框高亮提示可缩放
+    wrap.addEventListener('pointerenter', () => box.classList.add('pv-hover'))
+    wrap.addEventListener('pointerleave', () => box.classList.remove('pv-hover'))
     wrap.addEventListener('pointerdown', (e) => {
       e.preventDefault()
       wrap.setPointerCapture(e.pointerId)

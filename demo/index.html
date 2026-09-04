@@ -150,25 +150,18 @@
         position: fixed;
         pointer-events: none;
         z-index: 69;
-        border: 1.5px dashed rgba(255, 111, 159, 0.85);
-        border-radius: 10px; /* 圆滑边框 */
+        border: 2px dashed rgba(255, 111, 159, 0.95); /* 虚线明显（2px 高对比） */
+        border-radius: 10px;
         box-sizing: border-box;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
       }
-      body.preview-mode .pv-box.pv-resizing { border-color: #ff2d7a; border-width: 2.5px; }
-      /* 四角圆点缩放指示器（全方位缩放提示：任意边缘/角都可拖） */
-      body.preview-mode .pv-box .pv-dot {
-        position: absolute;
-        width: 9px; height: 9px;
-        border-radius: 50%;
-        background: #fff;
-        border: 2px solid #ff6f9f;
-        box-shadow: 0 1px 4px rgba(255, 111, 159, 0.5);
-        box-sizing: border-box;
+      /* 鼠标移到模块（wrap hover）→ 边框高亮提示可缩放 */
+      body.preview-mode .pv-box.pv-hover,
+      body.preview-mode .pv-box.pv-resizing {
+        border-color: #ff2d7a;
+        border-style: solid;
+        box-shadow: 0 0 0 3px rgba(255, 45, 122, 0.18), 0 2px 10px rgba(255, 45, 122, 0.25);
       }
-      body.preview-mode .pv-box .pv-dot.tl { top: -4px; left: -4px; }
-      body.preview-mode .pv-box .pv-dot.tr { top: -4px; right: -4px; }
-      body.preview-mode .pv-box .pv-dot.bl { bottom: -4px; left: -4px; }
-      body.preview-mode .pv-box .pv-dot.br { bottom: -4px; right: -4px; }
 
       /* ---------- 加载遮罩 ---------- */
       #loader {
