@@ -118,10 +118,10 @@
   .rst:hover { background:rgba(255,111,159,.12); color:var(--accent); }
   .hidden { display:none; }
   .bottom-btns { display:flex; flex-direction:column; gap:10px; margin-top:16px; }
-  /* ---------- 界面排版：屏幕实时预览 ---------- */
-  .layout-preview-wrap { display:flex; gap:18px; align-items:flex-start; flex-wrap:wrap; margin-bottom:6px; }
-  .layout-preview { position:relative; flex-shrink:0; width:320px; max-width:100%; aspect-ratio:4/3; border-radius:14px; overflow:hidden; box-shadow:0 6px 24px rgba(90,40,90,.18); border:1px solid rgba(255,255,255,.7); background:#0d0d18; }
-  .layout-preview iframe { position:absolute; top:0; left:0; width:800px; height:600px; border:none; transform:scale(var(--pv-scale,0.4)); transform-origin:top left; }
+  /* ---------- 界面排版：屏幕实时预览（预览在上，滑条在下） ---------- */
+  .layout-preview-wrap { display:flex; flex-direction:column; gap:14px; margin-bottom:6px; }
+  .layout-preview { position:relative; flex-shrink:0; width:100%; max-width:520px; margin:0 auto; aspect-ratio:4/3; border-radius:14px; overflow:hidden; box-shadow:0 6px 24px rgba(90,40,90,.18); border:1px solid rgba(255,255,255,.7); background:#0d0d18; }
+  .layout-preview iframe { position:absolute; top:0; left:0; width:800px; height:600px; border:none; transform:scale(var(--pv-scale,0.65)); transform-origin:top left; }
   .layout-preview .pv-hint { position:absolute; left:10px; bottom:8px; z-index:5; font-size:11px; color:rgba(255,255,255,.75); background:rgba(0,0,0,.35); padding:2px 10px; border-radius:999px; pointer-events:none; backdrop-filter:blur(4px); }
   .layout-preview .pv-loading { position:absolute; inset:0; z-index:4; display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,.6); font-size:13px; background:rgba(13,13,24,.6); }
   .layout-preview.loaded .pv-loading { display:none; }
@@ -358,7 +358,7 @@
             <div class="pv-hint">拖动模块 · 拖右下角缩放</div>
             <div class="pv-corner"></div>
           </div>
-          <div style="flex:1;min-width:280px">
+          <div style="flex:1;min-width:0;width:100%">
             <div class="layout-row"><span class="lname">时间</span><div class="axes"><span><label>X</label><input type="range" id="lay-time-x" min="-320" max="320" step="5" /><input type="number" id="lay-time-xn" min="-320" max="320" step="5" /><b id="lay-time-xv">0</b></span><span><label>Y</label><input type="range" id="lay-time-y" min="-240" max="240" step="5" /><input type="number" id="lay-time-yn" min="-240" max="240" step="5" /><b id="lay-time-yv">0</b></span><span><label>S</label><input type="range" id="lay-time-s" min="0.3" max="3" step="0.05" /><input type="number" id="lay-time-sn" min="0.3" max="3" step="0.05" /><b id="lay-time-sv">1.00</b></span></div></div>
             <div class="layout-row"><span class="lname">日期</span><div class="axes"><span><label>X</label><input type="range" id="lay-date-x" min="-320" max="320" step="5" /><input type="number" id="lay-date-xn" min="-320" max="320" step="5" /><b id="lay-date-xv">0</b></span><span><label>Y</label><input type="range" id="lay-date-y" min="-240" max="240" step="5" /><input type="number" id="lay-date-yn" min="-240" max="240" step="5" /><b id="lay-date-yv">0</b></span><span><label>S</label><input type="range" id="lay-date-s" min="0.3" max="3" step="0.05" /><input type="number" id="lay-date-sn" min="0.3" max="3" step="0.05" /><b id="lay-date-sv">1.00</b></span></div></div>
             <div class="layout-row"><span class="lname">天气</span><div class="axes"><span><label>X</label><input type="range" id="lay-weather-x" min="-320" max="320" step="5" /><input type="number" id="lay-weather-xn" min="-320" max="320" step="5" /><b id="lay-weather-xv">0</b></span><span><label>Y</label><input type="range" id="lay-weather-y" min="-240" max="240" step="5" /><input type="number" id="lay-weather-yn" min="-240" max="240" step="5" /><b id="lay-weather-yv">0</b></span><span><label>S</label><input type="range" id="lay-weather-s" min="0.3" max="3" step="0.05" /><input type="number" id="lay-weather-sn" min="0.3" max="3" step="0.05" /><b id="lay-weather-sv">1.00</b></span></div></div>

@@ -138,7 +138,8 @@
 
       /* ---------- 预览模式（后台排版页 iframe：?preview=1） ---------- */
       .pv-only { display: none; }
-      body.preview-mode .pv-only { display: block; }
+      /* 预览模式：模型不渲染，占位框必须隐藏（ID 权重高，需 !important 压过 #model-placeholder 的 display:flex） */
+      body.preview-mode #model-placeholder { display: none !important; }
       #model-placeholder {
         position: fixed; left: 50%; top: 0; z-index: 2;
         width: 42%; height: 72%;
@@ -157,6 +158,13 @@
         font-weight: 600; letter-spacing: 1px; white-space: nowrap;
         box-shadow: 0 2px 8px rgba(255, 111, 159, 0.5);
         pointer-events: none;
+      }
+      /* 预览包裹层：贴合模块内容尺寸 + 定位上下文（缩放手柄正确贴右下角） */
+      body.preview-mode .pv-wrap {
+        position: relative;
+        width: fit-content;
+        max-width: 100%;
+        align-self: flex-start; /* 防 flex 水平拉伸（side-panel 是 column 布局） */
       }
       body.preview-mode .pv-handle {
         position: absolute; right: -7px; bottom: -7px; z-index: 70;

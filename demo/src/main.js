@@ -948,12 +948,12 @@ if (IS_PREVIEW) {
 
 /* ================= 预览模式：拖拽 / 缩放 / 与后台同步（?preview=1） ================= */
 // 每个模块包一层 .pv-wrap（放 transform + 标签 + 缩放手柄），避免覆盖模块自身样式
+/* 预览模式：可拖拽/缩放模块（模型无占位框，位置大小由后台滑条调节） */
 const PV_MODULES = [
   { id: 'time-block', key: 'time', name: '时间' },
   { id: 'date-display', key: 'date', name: '日期' },
   { id: 'weather-display', key: 'weather', name: '天气' },
   { id: 'chat-bubble', key: 'bubble', name: '气泡' },
-  { id: 'model-placeholder', key: 'model', name: '模型' },
 ]
 
 function pvEmit() {
