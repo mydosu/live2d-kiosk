@@ -784,11 +784,6 @@ function initPreview() {
     wrap.className = 'pv-wrap'
     el.parentNode.insertBefore(wrap, el)
     wrap.appendChild(el)
-    // 名称标签（挂在 wrap 上，box 上方）
-    const label = document.createElement('div')
-    label.className = 'pv-label'
-    label.textContent = m.name
-    wrap.appendChild(label)
     // 虚线框 overlay：fixed 挂 body，直接用 viewport 坐标精确贴合模块渲染矩形（不受 wrap transform 缩放影响）
     const box = document.createElement('div')
     box.className = 'pv-box'

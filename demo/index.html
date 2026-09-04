@@ -134,17 +134,7 @@
       }
 
       /* ---------- 预览模式（后台排版页 iframe：?preview=1） ---------- */
-      /* 模型占位框已移除：真实屏幕渲染模型；预览模式不加载 Live2D，模型位置/大小由后台滑条控制 */
       body.preview-mode #side-panel { pointer-events: auto; }
-      /* 模块名标签 */
-      body.preview-mode .pv-label {
-        position: absolute; top: -24px; left: -2px; z-index: 70;
-        font-size: 11px; padding: 2px 8px; border-radius: 7px;
-        background: linear-gradient(135deg, #ff6f9f, #ff9fc4); color: #fff;
-        font-weight: 600; letter-spacing: 1px; white-space: nowrap;
-        box-shadow: 0 2px 8px rgba(255, 111, 159, 0.5);
-        pointer-events: none;
-      }
       /* 预览包裹层：贴合模块内容尺寸（拖边框=缩放，拖内部=移动） */
       body.preview-mode .pv-wrap {
         position: relative;
