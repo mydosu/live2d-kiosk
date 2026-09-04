@@ -170,7 +170,9 @@
       /* ---------- 预览模式（后台排版页 iframe：?preview=1） ---------- */
       body.preview-mode #side-panel { pointer-events: auto; }
       /* 预览不包裹额外层（DOM 与 kiosk 一致 → flex 布局/位置一致），交互直接挂在模块自身 */
-      body.preview-mode #side-panel > * { cursor: move; touch-action: none; user-select: none; }
+      /* 注意：cursor: move 只给虚线框（.pv-box）——元素是块级被 flex 拉伸到整行宽，
+         若元素也设 move 光标，鼠标在虚线框外（文字右侧空白）也会显示移动标识 */
+      body.preview-mode #side-panel > * { touch-action: none; user-select: none; }
       /* 虚线框 overlay：fixed 于 body，getBoundingClientRect 实时测量模块实际渲染位置（viewport 坐标直接对齐，不受 wrap transform 影响）
          交互绑在框上（pointer-events: auto）：时间/日期/天气是块级被 flex 拉伸到整行宽，元素本身命中区远超文字，
          若交互绑元素则虚线框外（文字右侧空白）也能拖动——绑框 = 所见即所得，只在虚线框内可操作 */
