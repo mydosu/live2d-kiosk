@@ -661,7 +661,7 @@ function render() {
   $('sel-session').value = config.astrbotSession || '';
   // 布局滑条（含数值输入）
     const lay = config.layout || {};
-    ['time','date','weather','bubble','model'].forEach(m => {
+    ['time','date','weather','bubble','model','wifi','bt'].forEach(m => {
       const v = lay[m] || {x:0, y:0, scale:1};
       ['x','y'].forEach(axis => {
         const val = v[axis] || 0;
@@ -1191,7 +1191,7 @@ window.addEventListener('message', (e) => {
   // 预览拖拽/缩放 → 更新滑条 + 草稿（不反向同步，避免循环）
   pvSyncing = true;
   const lay = d.layout || {};
-  ['time','date','weather','bubble','model'].forEach(m => {
+  ['time','date','weather','bubble','model','wifi','bt'].forEach(m => {
     const v = lay[m] || {x:0, y:0, scale:1};
     ['x','y'].forEach(a => {
       const val = v[a] || 0;
