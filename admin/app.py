@@ -44,7 +44,8 @@ DEFAULT_CONFIG = {
     "bgTheme": "aurora",  # 屏幕背景主题：aurora(极光) | pink(粉嫩) | dark(深色) | mint(薄荷) | sunset(日落)
     "fontStyle": "default",  # 字体风格（兼容旧配置，已废弃——用 fontStyles 每模块）
     "fontStyles": {"time": "default", "date": "default", "weather": "default", "bubble": "default"},  # 各模块字体风格：default/round/quicksand/nunito/baloo/fredoka/orbitron/serif
-    "infoSource": "wifi",  # 联网方式：wifi(无线) | usb(USB 共享网络/电脑 ICS)——联网后统一网络自动获取时间/天气/位置
+    "infoSource": "wifi",  # 兼容旧配置（单值）；新配置用 netSources 多选
+    "netSources": ["wifi", "usb"],  # 联网方式多选（互不干扰可共存）：wifi(无线) | usb(USB 共享网络/电脑 ICS)
     "astrbotUrl": "",  # AstrBot 主机地址（板子壳连接用）：局域网如 http://192.168.5.6:6185，或 DDNS 域名
     "astrbotKey": "",  # AstrBot API Key（WebUI 设置→API Key 创建，勾选 plugin/chat/file scope）
     "astrbotSession": "",  # 显示指定会话的消息（空 = 全部；后台「智能助手」页下拉选择）
@@ -124,7 +125,7 @@ def api_config():
         return jsonify(load_config())
     cfg = load_config()
     data = request.get_json(silent=True) or {}
-    for k in ("showTime", "showDate", "showWeather", "showBubble", "city", "weatherUnit", "weatherProvider", "weatherKey", "model", "zoom", "layout", "bubbleScrollSpeed", "bubbleHold", "bubblePlaceholder", "infoSource", "bubbleFontSize", "fontColors", "bubbleBgColor", "bgTheme", "fontStyles", "astrbotUrl", "astrbotKey", "astrbotSession"):
+    for k in ("showTime", "showDate", "showWeather", "showBubble", "city", "weatherUnit", "weatherProvider", "weatherKey", "model", "zoom", "layout", "bubbleScrollSpeed", "bubbleHold", "bubblePlaceholder", "infoSource", "netSources", "bubbleFontSize", "fontColors", "bubbleBgColor", "bgTheme", "fontStyles", "astrbotUrl", "astrbotKey", "astrbotSession"):
         if k in data:
             cfg[k] = data[k]
     save_config(cfg)
@@ -284,6 +285,113 @@ def api_wifi_status():
 def api_wifi_disconnect():
     _sh("sudo pkill -f wpa_supplicant 2>/dev/null; sleep 1; sudo ip link set wlan0 down 2>/dev/null")
     return jsonify({"ok": True, "msg": "WiFi 已断开"})
+
+
+# ---------- 蓝牙管理（bluetoothctl） ----------
+def _bt(cmd, timeout=20):
+    """运行 bluetoothctl 命令，避免交互卡死（timeout 兜底）"""
+    return _sh(f"timeout {timeout} bluetoothctl {cmd} 2>/dev/null")
+
+
+def bt_scan():
+    """扫描并收集设备（扫描 6s），返回去重列表"""
+    _bt("power on")
+    _bt("agent on")
+    _bt("default-agent")
+    _bt("scan on", timeout=7)
+    # 收集 device 列表（scan on 输出到 stdout，另取 devices 确保全量）
+    _bt("scan off", timeout=3)
+    r = _bt("devices")
+    seen = {}
+    if r:
+        for line in r.stdout.splitlines():
+            line = line.strip()
+            if not line.startswith("Device "):
+                continue
+            parts = line.split()
+            if len(parts) < 3:
+                continue
+            mac = parts[1]
+            name = " ".join(parts[2:])
+            if mac in seen:
+                continue
+            seen[mac] = {"mac": mac, "name": name or "(未命名)"}
+    return list(seen.values())
+
+
+@app.route("/api/bt/scan", methods=["GET"])
+def api_bt_scan():
+    try:
+        devices = bt_scan()
+        return jsonify({"devices": devices})
+    except Exception as e:
+        return jsonify({"error": f"蓝牙扫描失败: {e}", "devices": []})
+
+
+@app.route("/api/bt/connect", methods=["POST"])
+def api_bt_connect():
+    data = request.get_json(silent=True) or {}
+    mac = (data.get("mac") or "").strip()
+    if not mac:
+        return jsonify({"error": "缺少设备 MAC"}), 400
+    _bt("power on")
+    _bt("agent on")
+    _bt("default-agent")
+    _bt(f"pair {mac}", timeout=30)
+    _bt(f"trust {mac}", timeout=10)
+    _bt(f"connect {mac}", timeout=30)
+    # 校验是否已连接
+    info = _bt(f"info {mac}", timeout=10)
+    connected = bool(info and "Connected: yes" in info.stdout)
+    if connected:
+        return jsonify({"ok": True, "msg": f"蓝牙设备 {mac} 已连接"})
+    return jsonify({"ok": False, "error": "连接失败（设备可能不可达或需先配对）"})
+
+
+@app.route("/api/bt/disconnect", methods=["POST"])
+def api_bt_disconnect():
+    data = request.get_json(silent=True) or {}
+    mac = (data.get("mac") or "").strip()
+    if mac:
+        _bt(f"disconnect {mac}", timeout=10)
+    return jsonify({"ok": True, "msg": "蓝牙已断开"})
+
+
+@app.route("/api/bt/status", methods=["GET"])
+def api_bt_status():
+    r = _bt("devices")
+    connected, paired = [], []
+    if r:
+        for line in r.stdout.splitlines():
+            parts = line.strip().split()
+            if len(parts) < 3:
+                continue
+            mac = parts[1]
+            name = " ".join(parts[2:])
+            info = _bt(f"info {mac}", timeout=8)
+            if info and "Connected: yes" in info.stdout:
+                connected.append({"mac": mac, "name": name})
+            if info and "Paired: yes" in info.stdout:
+                paired.append({"mac": mac, "name": name})
+    return jsonify({"connected": connected, "paired": paired})
+
+
+# ---------- 网络状态总览（WiFi / USB ICS / eth） ----------
+@app.route("/api/net/status", methods=["GET"])
+def api_net_status():
+    def iface_ip(iface):
+        r = _sh(f"ip -4 addr show {iface} 2>/dev/null | grep inet")
+        return r.stdout.strip().split()[1] if r and r.stdout.strip() else ""
+    return jsonify({
+        "wifi": {
+            "up": bool(_sh("ip link show wlan0 2>/dev/null | grep -q 'state UP'") and _sh("iw dev wlan0 link 2>/dev/null") and "Connected to" in (_sh("iw dev wlan0 link 2>/dev/null").stdout or "")),
+            "ssid": (lambda r: (r.stdout.split("SSID:")[1].strip() if r and "SSID:" in r.stdout else ""))(_sh("iw dev wlan0 link 2>/dev/null")),
+            "ip": iface_ip("wlan0"),
+        },
+        "usb": {"up": bool(_sh("ip link show usb0 2>/dev/null | grep -q 'state UP'")), "ip": iface_ip("usb0")},
+        "eth": {"up": bool(_sh("ip link show eth0 2>/dev/null | grep -q 'state UP'")), "ip": iface_ip("eth0")},
+    })
+
 
 
 @app.route("/api/config/reset", methods=["POST"])

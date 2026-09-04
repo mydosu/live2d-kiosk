@@ -239,9 +239,9 @@
     <div class="page" id="page-source">
       <div class="card">
         <h2>网络与信息</h2>
-                <div class="row"><span>WiFi 无线联网</span><label class="switch"><input type="radio" name="src" id="src-wifi" /><span class="slider"></span></label></div>
-                <div class="row"><span>USB 共享网络（电脑 ICS）</span><label class="switch"><input type="radio" name="src" id="src-usb" /><span class="slider"></span></label></div>
-                <div class="sub" style="margin:6px 0 0">联网方式二选一（WiFi 或 USB 共享网络），联网后时间/天气/位置均自动从网络获取</div>
+                <div class="row"><span>WiFi 无线联网</span><label class="switch"><input type="checkbox" id="sw-wifi" /><span class="slider"></span></label></div>
+                <div class="row"><span>USB 共享网络（电脑 ICS）</span><label class="switch"><input type="checkbox" id="sw-usb" /><span class="slider"></span></label></div>
+                <div class="sub" style="margin:6px 0 0">两种联网方式可同时开启（互不干扰）：WiFi 走 wlan0，USB 共享网络走 usb0</div>
         <div id="wifi-box" style="margin-top:10px">
           <div class="sub" style="margin:0 0 8px">WiFi 连接（本机没有网线接口，请使用 WiFi 连接网络）</div>
           <div class="row" style="flex-wrap:wrap"><span style="font-size:13px">状态：<b id="wifi-status">未知</b></span>
@@ -253,6 +253,15 @@
             <input type="password" id="inp-wifi-pass" placeholder="WiFi 密码（开放网络留空）" style="flex:1" />
             <button class="btn btn-primary" id="btn-wifi-connect" style="padding:6px 12px;font-size:12px">连接</button>
           </div>
+        </div>
+        <div id="bt-box" style="margin-top:18px;border-top:1px solid rgba(255,255,255,.6);padding-top:14px">
+          <div class="sub" style="margin:0 0 8px">蓝牙设备（扫描并连接耳机/音箱等）</div>
+          <div class="row" style="flex-wrap:wrap"><span style="font-size:13px">状态：<b id="bt-status">未知</b></span>
+            <button class="btn btn-primary" id="btn-bt-scan" style="padding:6px 12px;font-size:12px">扫描</button>
+            <button class="btn" id="btn-bt-disconnect" style="padding:6px 12px;font-size:12px;background:#e8e8f0;color:#4a4a5a">断开</button>
+          </div>
+          <select id="sel-bt" style="width:100%;margin:8px 0"></select>
+          <button class="btn btn-primary" id="btn-bt-connect" style="padding:6px 12px;font-size:12px">连接</button>
         </div>
         <button class="btn btn-primary btn-save" data-card="src" style="margin-top:12px">保存设置</button>
       </div>
@@ -477,7 +486,7 @@ async function saveCard(card, fields) {
   if (card === 'layout') syncLayoutPreview();
 }
 const SAVE_FIELDS = {
-  src: ['infoSource'],
+  src: ['netSources'],
   display: ['showTime','showDate','showWeather','showBubble','bubblePlaceholder','bubbleScrollSpeed','bubbleHold','bubbleFontSize','fontColors','bubbleBgColor','bgTheme','fontStyles','city','weatherUnit','weatherProvider','weatherKey'],
   layout: ['layout'],
   agent: ['astrbotUrl','astrbotKey','astrbotSession'],
@@ -625,12 +634,12 @@ function render() {
   // 背景主题选中态
   document.querySelectorAll('.bg-chip').forEach(b => b.classList.toggle('active', b.dataset.theme === (config.bgTheme || 'aurora')));
   renderBgImage();
-  // 信息源
-    const src = config.infoSource || 'wifi';
-    $('src-wifi').checked = src === 'wifi';
-    $('src-usb').checked = src === 'usb';
-    $('wifi-box').style.display = src === 'wifi' ? '' : 'none';
-    if (src === 'wifi') refreshWifiStatus();
+  // 信息源（多选可共存）
+    const netSrc = config.netSources || (config.infoSource ? [config.infoSource] : ['wifi']);
+    $('sw-wifi').checked = netSrc.includes('wifi');
+    $('sw-usb').checked = netSrc.includes('usb');
+    refreshWifiStatus();
+    refreshBtStatus();
   $('inp-astrbot-url').value = config.astrbotUrl || '';
   $('inp-astrbot-key').value = config.astrbotKey || '';
   $('sel-session').value = config.astrbotSession || '';
@@ -980,16 +989,15 @@ $('btn-test-astrbot').addEventListener('click', testAstrbot);
 refreshShellStatus();
 setInterval(refreshShellStatus, 10000);
 
-// ---------- 信息获取方式 ----------
-['src-wifi','src-usb'].forEach(id => {
+// ---------- 信息获取方式（多选共存） ----------
+['sw-wifi','sw-usb'].forEach(id => {
   $(id).addEventListener('change', (e) => {
-    if (!e.target.checked) return;
-    const src = id === 'src-wifi' ? 'wifi' : 'usb';
-    $('wifi-box').style.display = src === 'wifi' ? '' : 'none';
-    draft.infoSource = src;
+    const srcs = [];
+    if ($('sw-wifi').checked) srcs.push('wifi');
+    if ($('sw-usb').checked) srcs.push('usb');
+    draft.netSources = srcs.length ? srcs : ['wifi']; // 至少保留一个
     markDirty('src');
-    if (src === 'wifi') refreshWifiStatus();
-    toast(src === 'wifi' ? '已切换到 WiFi 无线联网' : '已切换到 USB 共享网络');
+    refreshWifiStatus();
   });
 });
 
@@ -1040,6 +1048,57 @@ $('btn-wifi-disconnect').addEventListener('click', async () => {
   toast('WiFi 已断开');
   refreshWifiStatus();
 });
+
+// ---------- 蓝牙管理 ----------
+async function refreshBtStatus() {
+  try {
+    const r = await fetch(API + '/api/bt/status').then(x => x.json());
+    const c = r.connected || [];
+    $('bt-status').textContent = c.length ? ('已连接 ' + c.map(x => x.name || x.mac).join('、')) : '未连接';
+  } catch { $('bt-status').textContent = '状态获取失败'; }
+}
+$('btn-bt-scan').addEventListener('click', async () => {
+  $('btn-bt-scan').disabled = true;
+  toast('正在扫描蓝牙设备…');
+  try {
+    const r = await fetch(API + '/api/bt/scan').then(x => x.json());
+    const sel = $('sel-bt');
+    sel.innerHTML = '';
+    if (r.error || !r.devices || !r.devices.length) {
+      sel.innerHTML = '<option>未发现蓝牙设备</option>';
+      if (r.error) toast(r.error);
+    } else {
+      r.devices.forEach(d => {
+        const o = document.createElement('option');
+        o.value = d.mac;
+        o.textContent = `${d.name}  (${d.mac})`;
+        sel.appendChild(o);
+      });
+      toast('发现 ' + r.devices.length + ' 个设备');
+    }
+  } catch { toast('扫描失败'); }
+  $('btn-bt-scan').disabled = false;
+});
+$('btn-bt-connect').addEventListener('click', async () => {
+  const mac = $('sel-bt').value;
+  if (!mac || mac === '未发现蓝牙设备') return toast('请先扫描并选择设备');
+  $('btn-bt-connect').disabled = true;
+  toast('正在连接 ' + mac + '…');
+  try {
+    const r = await fetch(API + '/api/bt/connect', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({mac})}).then(x => x.json());
+    if (r.error) return toast(r.error);
+    toast(r.msg);
+    setTimeout(refreshBtStatus, 4000);
+  } catch { toast('连接失败'); }
+  $('btn-bt-connect').disabled = false;
+});
+$('btn-bt-disconnect').addEventListener('click', async () => {
+  const mac = $('sel-bt').value;
+  await fetch(API + '/api/bt/disconnect', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({mac})});
+  toast('蓝牙已断开');
+  refreshBtStatus();
+});
+setInterval(refreshBtStatus, 15000);
 
 // ---------- 布局滑条（滑条+数值输入联动，草稿模式） ----------
 function collectLayout() {
