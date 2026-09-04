@@ -23,6 +23,7 @@ BG_DIR = os.path.join(WEB_DIR, "bg")  # 自定义背景图目录
 CONFIG_PATH = os.path.join(WEB_DIR, "config.json")
 WS_PORT = 9000
 ADMIN_PORT = 8080
+CLEAR_TS = 0.0  # 清屏版本号（幂等：kiosk/预览 iframe 各自 poll 比对执行清屏，无竞争）
 
 DEFAULT_CONFIG = {
     "model": "Hiyori",
@@ -554,8 +555,11 @@ def config_defaults():
 
 @app.route("/api/clear", methods=["POST"])
 def api_clear():
-    """清空屏幕消息：清插件队列（代理）+ 本地队列 + 通知页面恢复占位"""
+    """清空屏幕消息：清插件队列（代理）+ 本地队列 + 通知页面恢复占位
+    用 clear_ts 版本号（幂等）：kiosk/预览 iframe 各自 poll 比对，避免消息竞争丢失"""
+    global CLEAR_TS
     import urllib.request
+    import time as _t
 
     cfg = load_config()
     base = (cfg.get("astrbotUrl") or "").rstrip("/")
@@ -575,8 +579,9 @@ def api_clear():
             pass
     with _RECENT_LOCK:
         RECENT_MESSAGES.clear()
-    broadcast({"type": "clear"})
-    return jsonify({"ok": True, "cleared": cleared_remote})
+    CLEAR_TS = _t.time()  # 版本号更新：所有消费者下次 poll 都会看到并清屏
+    broadcast({"type": "clear"})  # 兼容旧消费者（如无 poll 比对的旧页面）
+    return jsonify({"ok": True, "cleared": cleared_remote, "clear_ts": CLEAR_TS})
 
 
 @app.route("/bg/<path:fname>")
@@ -659,11 +664,11 @@ def api_geoip():
 
 @app.route("/api/poll")
 def api_poll():
-    """页面轮询：拉取最近消息并清空"""
+    """页面轮询：拉取最近消息并清空（附带 clear_ts 版本号供清屏比对）"""
     with _RECENT_LOCK:
         msgs = list(RECENT_MESSAGES)
         RECENT_MESSAGES.clear()
-    return jsonify({"messages": msgs})
+    return jsonify({"messages": msgs, "clear_ts": CLEAR_TS})
 
 
 if __name__ == "__main__":

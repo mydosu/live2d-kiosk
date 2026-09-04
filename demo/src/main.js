@@ -410,15 +410,29 @@ function applyLayout() {
 
 /* ---------------- 消息轮询（去 ws：GET /api/poll 拉取控制消息） ---------------- */
 function initPoll() {
+  let lastClearTs = 0
   const poll = async () => {
     try {
       const r = await fetch(`${API_BASE}/api/poll`)
       const data = await r.json()
       ;(data.messages || []).forEach(handleWSMessage)
+      // 清屏版本号幂等比对：kiosk/预览 iframe 各自执行，不因消息竞争丢失
+      const ts = data.clear_ts || 0
+      if (ts > lastClearTs) {
+        lastClearTs = ts
+        clearBubble()
+      }
     } catch { /* ignore */ }
   }
   poll()
   setInterval(poll, 1000) // 1s 轮询（保存后更快生效；轻量，不影响渲染帧率）
+}
+
+function clearBubble() {
+  chatBubble.classList.add('empty')
+  chatBubble.textContent = CONFIG.bubblePlaceholder || '等待 agent 消息…'
+  chatBubble.style.fontSize = (Number(CONFIG.bubbleFontSize) || 14) + 'px'
+  stopAutoScroll()
 }
 
 function handleWSMessage(msg) {
@@ -448,11 +462,8 @@ function handleWSMessage(msg) {
     case 'speak':
       showBubble(msg.text)
       break
-    case 'clear': // 后台「清空消息」：气泡恢复占位
-      chatBubble.classList.add('empty')
-      chatBubble.textContent = CONFIG.bubblePlaceholder || '等待 agent 消息…'
-      chatBubble.style.fontSize = (Number(CONFIG.bubbleFontSize) || 14) + 'px'
-      stopAutoScroll()
+    case 'clear': // 后台「清空消息」：气泡恢复占位（clear_ts 幂等为主，此为广播兼容）
+      clearBubble()
       break
   }
 }
