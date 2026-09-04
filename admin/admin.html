@@ -1081,7 +1081,8 @@ $('btn-bt-disconnect').addEventListener('click', async () => {
     refreshBtStatus();
   } catch { toast('断开失败'); }
 });
-setInterval(refreshBtStatus, 15000);
+setInterval(refreshBtStatus, 3000); // 3s 轮询（手机断开/连接更及时反映）
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshBtStatus(); }); // 切回页面立即刷新
 
 // ---------- 布局滑条（滑条+数值输入联动，草稿模式） ----------
 function collectLayout() {
