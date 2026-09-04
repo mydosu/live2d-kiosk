@@ -289,8 +289,17 @@ def api_wifi_disconnect():
 
 # ---------- 蓝牙管理（bluetoothctl） ----------
 def _bt(cmd, timeout=20):
-    """运行 bluetoothctl 命令，避免交互卡死（timeout 兜底）"""
-    return _sh(f"timeout {timeout} bluetoothctl {cmd} 2>/dev/null")
+    """运行 bluetoothctl 命令（--timeout 控制扫描时长），stdout 完整捕获
+    注意：外层 subprocess 超时必须 > 命令时长，否则扫描输出在完成前被掐断"""
+    return _sh2(f"bluetoothctl {cmd} 2>/dev/null", timeout + 6)
+
+
+def _sh2(cmd, timeout=30):
+    """subprocess 封装：超时参数可独立指定（扫描类命令需 > 内部时长）"""
+    try:
+        return subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=timeout)
+    except Exception:
+        return None
 
 
 def bt_scan():
