@@ -516,13 +516,14 @@ async function initApp() {
     // 超时保护：极端环境下 Pixi 初始化可能挂起，便于诊断而非白屏
     // canvas 尺寸固定为屏幕物理尺寸（window.screen）：
     // 部分 kiosk 环境（无 WM 的 X11）Chromium viewport 会溢出屏幕，
-    // 统一布局基准：左侧面板宽度固定 = viewport 一半（400px）。
-    // 注意：不能用 window.screen.width——kiosk 里是 640（xrandr rotate 后逻辑分辨率），
-    // 预览 iframe 里是 800（Chromium 默认），会导致 kiosk 面板 320px vs 预览 400px 错位。
-    const SW = 800 // 布局画布宽（viewport 恒 800x600）
-    const SH = 600
+    // 布局基准（解耦两层）：
+    // 1) 面板宽度 = viewport 一半（400px）——kiosk 与预览 iframe 一致（viewport 恒 800x600）
+    // 2) Pixi 画布 = 屏幕物理尺寸（window.screen：kiosk 640x480）——Chromium viewport 溢出屏幕，
+    //    fitSprite 模型区基于画布（zoneX=320=右半屏），画布若用 800 则模型区 400 → 模型右移超界。
     const panelEl = $('side-panel')
-    if (panelEl) panelEl.style.width = Math.round(SW / 2) + 'px' // 400px
+    if (panelEl) panelEl.style.width = '400px'
+    const SW = window.screen.width || window.innerWidth
+    const SH = window.screen.height || window.innerHeight
     await Promise.race([
       app.init({
         canvas: $('live2d'),
