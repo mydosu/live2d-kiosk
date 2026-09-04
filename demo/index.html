@@ -13,9 +13,6 @@
         --panel-border: rgba(255, 255, 255, 0.12);
         --text: #e8e8f2;
         --text-dim: #9a9ab0;
-        --btn-bg: rgba(255, 255, 255, 0.07);
-        --btn-bg-hover: rgba(124, 92, 255, 0.28);
-        --btn-active: rgba(124, 92, 255, 0.45);
       }
 
       * {
@@ -139,43 +136,40 @@
       /* ---------- 预览模式（后台排版页 iframe：?preview=1） ---------- */
       /* 模型占位框已移除：真实屏幕渲染模型；预览模式不加载 Live2D，模型位置/大小由后台滑条控制 */
       body.preview-mode #side-panel { pointer-events: auto; }
+      /* 模块名标签 */
       body.preview-mode .pv-label {
-        position: absolute; top: -22px; left: -2px; z-index: 70;
+        position: absolute; top: -24px; left: -2px; z-index: 70;
         font-size: 11px; padding: 2px 8px; border-radius: 7px;
         background: linear-gradient(135deg, #ff6f9f, #ff9fc4); color: #fff;
         font-weight: 600; letter-spacing: 1px; white-space: nowrap;
         box-shadow: 0 2px 8px rgba(255, 111, 159, 0.5);
         pointer-events: none;
       }
-      /* 预览包裹层：贴合模块内容尺寸 + 定位上下文（缩放手柄正确贴右下角） */
+      /* 预览包裹层：贴合模块内容尺寸 + 虚线框（拖边框=缩放，拖内部=移动） */
       body.preview-mode .pv-wrap {
         position: relative;
         width: fit-content;
         max-width: 100%;
         align-self: flex-start; /* 防 flex 水平拉伸（side-panel 是 column 布局） */
-      }
-      body.preview-mode .pv-handle {
-        position: absolute; right: -7px; bottom: -7px; z-index: 70;
-        width: 18px; height: 18px; border-radius: 6px;
-        background: linear-gradient(135deg, #ff6f9f, #ff9fc4);
-        cursor: nwse-resize;
-        box-shadow: 0 2px 6px rgba(255, 111, 159, 0.55);
-        touch-action: none;
-      }
-      body.preview-mode .pv-handle::after {
-        content: ''; position: absolute; right: 4px; bottom: 4px;
-        width: 7px; height: 7px;
-        border-right: 2px solid #fff; border-bottom: 2px solid #fff;
-      }
-      body.preview-mode #time-block, body.preview-mode #date-display,
-      body.preview-mode #weather-display, body.preview-mode #chat-bubble {
-        cursor: move; touch-action: none; user-select: none;
-      }
-      body.preview-mode #time-block, body.preview-mode #date-display,
-      body.preview-mode #weather-display, body.preview-mode #chat-bubble {
-        outline: 1.5px dashed rgba(255, 111, 159, 0.55);
-        outline-offset: 3px;
+        outline: 1.5px dashed rgba(255, 111, 159, 0.7);
+        outline-offset: 2px;
         border-radius: 8px;
+        cursor: move;
+        touch-action: none;
+        user-select: none;
+        transition: outline-color 0.15s ease;
+      }
+      /* hover/按下边框时提示可缩放 */
+      body.preview-mode .pv-wrap:hover { outline-color: #ff6f9f; outline-width: 2px; }
+      body.preview-mode .pv-wrap.pv-resizing { outline-color: #ff2d7a; outline-width: 2.5px; }
+      /* 四角缩放光标提示（右下角） */
+      body.preview-mode .pv-wrap::after {
+        content: ''; position: absolute; right: -5px; bottom: -5px; z-index: 71;
+        width: 12px; height: 12px;
+        border-right: 2px solid rgba(255, 111, 159, 0.85);
+        border-bottom: 2px solid rgba(255, 111, 159, 0.85);
+        border-radius: 2px;
+        pointer-events: none;
       }
 
       /* ---------- 加载遮罩 ---------- */
@@ -266,215 +260,6 @@
         box-shadow: 0 0 8px #ffb13d;
       }
 
-      /* ---------- 底部控制条 ---------- */
-      #controls {
-        position: fixed;
-        left: 50%;
-        bottom: 18px;
-        transform: translateX(-50%);
-        z-index: 30;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 10px;
-        border-radius: 16px;
-        background: var(--panel-bg);
-        border: 1px solid var(--panel-border);
-        backdrop-filter: blur(12px);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
-        transition: opacity 0.3s ease, transform 0.3s ease;
-        max-width: calc(100vw - 24px);
-      }
-      #controls.hide-hud {
-        opacity: 0;
-        transform: translateX(-50%) translateY(12px);
-        pointer-events: none;
-      }
-      .icon-btn {
-        width: 40px;
-        height: 40px;
-        border-radius: 12px;
-        border: 1px solid transparent;
-        background: var(--btn-bg);
-        color: var(--text);
-        font-size: 17px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
-        flex-shrink: 0;
-      }
-      .icon-btn:hover {
-        background: var(--btn-bg-hover);
-        transform: scale(1.06);
-      }
-      .icon-btn.on {
-        background: var(--btn-active);
-        border-color: rgba(124, 92, 255, 0.55);
-      }
-      .icon-btn:active {
-        transform: scale(0.94);
-      }
-      #btn-panel {
-        background: linear-gradient(135deg, var(--accent), var(--accent-2));
-        border: none;
-        color: #fff;
-        font-weight: 700;
-        font-size: 15px;
-      }
-      .sep {
-        width: 1px;
-        height: 26px;
-        background: var(--panel-border);
-        margin: 0 2px;
-        flex-shrink: 0;
-      }
-
-      /* ---------- 侧滑面板 ---------- */
-      #panel {
-        position: fixed;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        width: min(340px, 88vw);
-        z-index: 50;
-        background: var(--panel-bg);
-        backdrop-filter: blur(16px);
-        border-left: 1px solid var(--panel-border);
-        box-shadow: -12px 0 40px rgba(0, 0, 0, 0.5);
-        transform: translateX(105%);
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-      }
-      #panel.open {
-        transform: translateX(0);
-      }
-      #panel-head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 14px 16px;
-        border-bottom: 1px solid var(--panel-border);
-        font-size: 15px;
-        font-weight: 700;
-        letter-spacing: 1px;
-      }
-      #panel-close {
-        width: 32px;
-        height: 32px;
-        border: none;
-        border-radius: 10px;
-        background: var(--btn-bg);
-        color: var(--text);
-        cursor: pointer;
-        font-size: 15px;
-      }
-      #panel-body {
-        flex: 1;
-        overflow-y: auto;
-        padding: 14px 16px 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-      }
-      .group-label {
-        font-size: 12px;
-        color: var(--text-dim);
-        letter-spacing: 2px;
-        margin-bottom: 8px;
-        text-transform: uppercase;
-      }
-      .btn-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 8px;
-      }
-      .btn-grid .act-btn {
-        min-height: 40px;
-        font-size: 13px;
-      }
-      .act-btn {
-        border: 1px solid var(--panel-border);
-        border-radius: 12px;
-        background: var(--btn-bg);
-        color: var(--text);
-        padding: 9px 12px;
-        font-size: 13px;
-        cursor: pointer;
-        transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
-        text-align: center;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-      .act-btn:hover {
-        background: var(--btn-bg-hover);
-        transform: scale(1.03);
-      }
-      .act-btn:active {
-        transform: scale(0.96);
-      }
-      .act-btn.active {
-        background: var(--btn-active);
-        border-color: rgba(124, 92, 255, 0.6);
-      }
-      .act-btn.wide {
-        grid-column: span 2;
-      }
-      .switch-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 6px 2px;
-        font-size: 13px;
-        color: var(--text);
-      }
-      .switch {
-        position: relative;
-        width: 44px;
-        height: 24px;
-        flex-shrink: 0;
-      }
-      .switch input {
-        opacity: 0;
-        width: 0;
-        height: 0;
-      }
-      .switch .track {
-        position: absolute;
-        inset: 0;
-        border-radius: 999px;
-        background: rgba(255, 255, 255, 0.14);
-        transition: background 0.2s ease;
-        cursor: pointer;
-      }
-      .switch .track::after {
-        content: "";
-        position: absolute;
-        top: 3px;
-        left: 3px;
-        width: 18px;
-        height: 18px;
-        border-radius: 50%;
-        background: #fff;
-        transition: transform 0.2s ease;
-      }
-      .switch input:checked + .track {
-        background: var(--accent);
-      }
-      .switch input:checked + .track::after {
-        transform: translateX(20px);
-      }
-      #hint {
-        margin-top: 4px;
-        font-size: 11px;
-        color: var(--text-dim);
-        line-height: 1.7;
-      }
-
       /* ---------- Toast ---------- */
       #toast {
         position: fixed;
@@ -507,16 +292,6 @@
       }
 
       /* ---------- 滚动条 ---------- */
-      #panel-body::-webkit-scrollbar {
-        width: 6px;
-      }
-      #panel-body::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.18);
-        border-radius: 3px;
-      }
-      #panel-body::-webkit-scrollbar-track {
-        background: transparent;
-      }
     </style>
   </head>
 
@@ -545,72 +320,6 @@
     <div id="topbar">
       <div id="status-dot"></div>
       <div id="model-badge">—</div>
-    </div>
-
-    <!-- 底部控制条 -->
-    <div id="controls">
-      <button class="icon-btn" id="btn-panel" title="控制面板">☰</button>
-      <div class="sep"></div>
-      <button class="icon-btn" id="btn-prev" title="上一个模型 (←)">◀</button>
-      <button class="icon-btn" id="btn-next" title="下一个模型 (→)">▶</button>
-      <div class="sep"></div>
-      <button class="icon-btn" id="btn-idle" title="播放待机动作 (空格)">▶</button>
-      <button class="icon-btn" id="btn-tap" title="TapBody 动作">👆</button>
-      <button class="icon-btn" id="btn-talk" title="说话（口型同步）">💬</button>
-      <div class="sep"></div>
-      <button class="icon-btn" id="btn-follow" title="鼠标跟随">🖱️</button>
-      <button class="icon-btn" id="btn-drag" title="拖拽">✋</button>
-      <div class="sep"></div>
-      <button class="icon-btn" id="btn-fullscreen" title="全屏 (F)">⛶</button>
-    </div>
-
-    <!-- 侧滑面板 -->
-    <div id="panel">
-      <div id="panel-head">
-        <span>控制面板</span>
-        <button id="panel-close">✕</button>
-      </div>
-      <div id="panel-body">
-        <div>
-          <div class="group-label">模型选择</div>
-          <div class="btn-grid" id="model-list"></div>
-        </div>
-        <div>
-          <div class="group-label">动作 Motion</div>
-          <div class="btn-grid" id="motion-list"></div>
-        </div>
-        <div>
-          <div class="group-label">表情 Expression</div>
-          <div class="btn-grid" id="expr-list"></div>
-        </div>
-        <div>
-          <div class="group-label">语音 Voice</div>
-          <div class="btn-grid" id="voice-list"></div>
-        </div>
-        <div>
-          <div class="group-label">开关</div>
-          <div class="switch-row">
-            <span>鼠标跟随</span>
-            <label class="switch"><input type="checkbox" id="sw-follow" checked /><span class="track"></span></label>
-          </div>
-          <div class="switch-row">
-            <span>拖拽模型</span>
-            <label class="switch"><input type="checkbox" id="sw-drag" /><span class="track"></span></label>
-          </div>
-          <div class="switch-row">
-            <span>自动待机动作</span>
-            <label class="switch"><input type="checkbox" id="sw-auto-idle" checked /><span class="track"></span></label>
-          </div>
-          <div class="switch-row">
-            <span>HUD 自动隐藏</span>
-            <label class="switch"><input type="checkbox" id="sw-auto-hide" checked /><span class="track"></span></label>
-          </div>
-        </div>
-        <div id="hint">
-          快捷键：←/→ 切换模型 · 空格 待机动作 · F 全屏 · H 显示/隐藏面板<br />
-          提示：点击模型身体会播放 Tap 动作，拖动模型可移动位置
-        </div>
-      </div>
     </div>
 
     <!-- Toast -->

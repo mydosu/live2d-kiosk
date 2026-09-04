@@ -46,9 +46,6 @@ if (loader) {
 const toastEl = $('toast')
 const modelBadge = $('model-badge')
 const statusDot = $('status-dot')
-const controls = $('controls')
-const topbar = $('topbar')
-const panel = $('panel')
 const timeDisplay = $('time-display')
 const dateDisplay = $('date-display')
 const weatherDisplay = $('weather-display')
@@ -637,10 +634,6 @@ async function loadModelByName(name, { silent = false } = {}) {
 
     modelBadge.textContent = name
     currentModelName = name
-    if (!IS_KIOSK) {
-      buildMotionUI()
-      buildExprUI()
-    }
     setBusy(false)
     loader.classList.add('hidden')
 
@@ -702,13 +695,6 @@ async function loadModel(index, { silent = false } = {}) {
   await loadModelByName(name, { silent })
 }
 
-function switchModel(index) {
-  const n = MODELS.length
-  const i = ((index % n) + n) % n
-  if (i === currentIndex) return
-  loadModel(i)
-}
-
 /* ---------------- 动作 ---------------- */
 function playRandomIdle(force = false) {
   if (!sprite || !autoIdle) return
@@ -741,196 +727,9 @@ function playTapMotion() {
   }
 }
 
-/* ---------------- UI 构建 ---------------- */
-function buildModelUI() {
-  const box = $('model-list')
-  box.innerHTML = ''
-  MODELS.forEach((name, i) => {
-    const b = document.createElement('button')
-    b.className = 'act-btn' + (i === currentIndex ? ' active' : '')
-    b.textContent = name
-    b.onclick = () => switchModel(i)
-    box.appendChild(b)
-  })
-}
-
-function buildMotionUI() {
-  const box = $('motion-list')
-  box.innerHTML = ''
-  const motions = sprite.getMotions()
-  if (!motions.length) {
-    box.innerHTML = '<button class="act-btn wide" disabled>此模型无动作</button>'
-    return
-  }
-  // 按动作组分组展示
-  const groups = {}
-  for (const m of motions) (groups[m.group] ??= []).push(m)
-  for (const [group, list] of Object.entries(groups)) {
-    const label = document.createElement('div')
-    label.className = 'group-label'
-    label.style.marginTop = '6px'
-    label.style.gridColumn = 'span 2'
-    label.textContent = group
-    box.appendChild(label)
-    for (const m of list) {
-      const b = document.createElement('button')
-      b.className = 'act-btn'
-      b.textContent = `${group}_${m.no}`
-      b.title = m.name
-      b.onclick = () => {
-        sprite.startMotion({ group: m.group, no: m.no, priority: Priority.Normal })
-        toast(`动作: ${m.group}_${m.no}`)
-      }
-      box.appendChild(b)
-    }
-  }
-}
-
-function buildExprUI() {
-  const box = $('expr-list')
-  box.innerHTML = ''
-  const exprs = sprite.getExpressions()
-  if (!exprs.length) {
-    box.innerHTML = '<button class="act-btn wide" disabled>此模型无表情</button>'
-    return
-  }
-  for (const e of exprs) {
-    const b = document.createElement('button')
-    b.className = 'act-btn'
-    b.textContent = e.name
-    b.onclick = () => {
-      sprite.setExpression({ index: exprs.indexOf(e) })
-      toast(`表情: ${e.name}`)
-    }
-    box.appendChild(b)
-  }
-}
-
-function buildVoiceUI(name) {
-  const box = $('voice-list')
-  box.innerHTML = ''
-  const voices = VOICES[name]
-  if (!voices) {
-    box.innerHTML = '<button class="act-btn wide" disabled>此模型无语音</button>'
-    return
-  }
-  for (const v of voices) {
-    const b = document.createElement('button')
-    b.className = 'act-btn'
-    b.textContent = `🔊 ${v.label}`
-    b.onclick = async () => {
-      try {
-        await sprite.playVoice({ voicePath: v.path })
-      } catch (e) {
-        toast('语音播放失败: ' + (e?.message || e), true)
-      }
-    }
-    box.appendChild(b)
-  }
-}
-
-/* ---------------- 控制条 ---------------- */
-const btnTalk = $('btn-talk')
-btnTalk.onclick = () => {
-  const b = document.querySelector('#voice-list .act-btn')
-  if (b) b.click()
-  else toast('当前模型无语音', true)
-}
-
-$('btn-idle').onclick = () => {
-  autoIdle = true
-  playRandomIdle(true)
-}
-$('btn-tap').onclick = playTapMotion
-$('btn-prev').onclick = () => switchModel(currentIndex - 1)
-$('btn-next').onclick = () => switchModel(currentIndex + 1)
-
-/* ---------------- 开关 ---------------- */
-$('sw-follow').addEventListener('change', (e) => {
-  Config.MouseFollow = e.target.checked
-})
-$('sw-drag').addEventListener('change', (e) => {
-  if (sprite) sprite.draggable = e.target.checked
-})
-$('sw-auto-idle').addEventListener('change', (e) => {
-  autoIdle = e.target.checked
-  if (autoIdle && sprite) playRandomIdle(true)
-})
-$('sw-auto-hide').addEventListener('change', () => {
-  if ($('sw-auto-hide').checked) armHide()
-  else wakeHUD(true)
-})
-
-/* ---------------- 面板 ---------------- */
-function togglePanel(force) {
-  const open = typeof force === 'boolean' ? force : !panel.classList.contains('open')
-  panel.classList.toggle('open', open)
-  if (open) wakeHUD(true)
-}
-$('btn-panel').onclick = () => togglePanel()
-$('panel-close').onclick = () => togglePanel(false)
-
-/* ---------------- HUD 自动隐藏（kiosk 模式） ---------------- */
-let hideTimer = null
-function armHide() {
-  if (!$('sw-auto-hide').checked) return
-  clearTimeout(hideTimer)
-  hideTimer = setTimeout(() => {
-    if (panel.classList.contains('open')) return
-    controls.classList.add('hide-hud')
-    topbar.classList.add('hide-hud')
-  }, 3500)
-}
-function wakeHUD(keep) {
-  controls.classList.remove('hide-hud')
-  topbar.classList.remove('hide-hud')
-  if (!keep) armHide()
-}
-document.addEventListener('pointermove', () => wakeHUD())
-document.addEventListener('pointerdown', () => wakeHUD())
-
-/* ---------------- 全屏 ---------------- */
-$('btn-fullscreen').onclick = async () => {
-  try {
-    if (document.fullscreenElement) await document.exitFullscreen()
-    else await document.documentElement.requestFullscreen()
-  } catch { /* 浏览器策略限制时忽略 */ }
-}
-
-/* ---------------- 键盘快捷键 ---------------- */
-document.addEventListener('keydown', (e) => {
-  switch (e.key) {
-    case 'ArrowLeft':
-      switchModel(currentIndex - 1)
-      break
-    case 'ArrowRight':
-      switchModel(currentIndex + 1)
-      break
-    case ' ':
-      e.preventDefault()
-      autoIdle = true
-      playRandomIdle(true)
-      break
-    case 'f':
-    case 'F':
-      $('btn-fullscreen').click()
-      break
-    case 'h':
-    case 'H':
-      togglePanel()
-      break
-  }
-})
-
 /* ---------------- 启动 ---------------- */
 // 注意：不要用顶层 await 启动 —— rollup 打包后 pixi 的动态 import chunk
 // 依赖主 bundle，若主 bundle 求值被顶层 await 阻塞会形成模块求值死锁
-if (!IS_KIOSK) buildModelUI()
-// kiosk 模式初始隐藏 HUD（保持画面纯净）
-if (IS_KIOSK) {
-  controls.classList.add('hide-hud')
-  topbar.classList.add('hide-hud')
-}
 initPoll() // 轮询管理后台消息（agent 控制）
 if (IS_PREVIEW) {
   // 预览模式：跳过 Live2D（双实例会 OOM），显示模型占位框 + 启用拖拽/缩放控制
@@ -967,9 +766,7 @@ function pvApply(key) {
 
 function initPreview() {
   document.body.classList.add('preview-mode')
-  // 隐藏 HUD（控制条/顶栏/加载遮罩），只留屏幕内容 + 占位框
-  controls.classList.add('hide-hud')
-  topbar.classList.add('hide-hud')
+  // 隐藏加载遮罩，只留屏幕内容
   if (loader) loader.classList.add('hidden')
   // 时间/日期/天气/气泡真实显示，方便预览效果
   if (CONFIG.showTime) startClock()
@@ -977,7 +774,8 @@ function initPreview() {
   if (chatBubble.classList.contains('empty')) {
     chatBubble.textContent = CONFIG.bubblePlaceholder || '等待 agent 消息…'
   }
-  // 为每个模块包裹 .pv-wrap + 标签 + 缩放手柄
+  // 为每个模块包裹 .pv-wrap + 标签；虚线框即缩放手柄（拖边框=缩放，拖内部=移动）
+  const EDGE = 10 // 边缘阈值 px：按下点距 wrap 边缘 ≤ 此值 → 缩放模式
   for (const m of PV_MODULES) {
     const el = $(m.id)
     if (!el) continue
@@ -991,58 +789,66 @@ function initPreview() {
     label.className = 'pv-label'
     label.textContent = m.name
     wrap.appendChild(label)
-    // 缩放手柄
-    const handle = document.createElement('div')
-    handle.className = 'pv-handle'
-    wrap.appendChild(handle)
-    // 拖动（wrap 上按下移动 → 更新 x/y）
-    let dragStart = null
+
+    // 统一指针交互：边缘→缩放，内部→移动
+    let gesture = null // { mode:'move'|'resize', px,py, ox,oy, s0, c0 }
     wrap.addEventListener('pointerdown', (e) => {
-      if (e.target.classList.contains('pv-handle')) return
       e.preventDefault()
       wrap.setPointerCapture(e.pointerId)
       const v = CONFIG.layout?.[m.key] || { x: 0, y: 0, scale: 1 }
-      dragStart = { px: e.clientX, py: e.clientY, ox: Number(v.x) || 0, oy: Number(v.y) || 0 }
+      const rect = wrap.getBoundingClientRect()
+      // 边缘检测（含 outline-offset 的视觉边框区域）
+      const nearEdge =
+        e.clientX - rect.left <= EDGE || rect.right - e.clientX <= EDGE ||
+        e.clientY - rect.top <= EDGE || rect.bottom - e.clientY <= EDGE
+      if (nearEdge) {
+        // 缩放模式：以 wrap 中心为基准，拖拽距离比例 → scale
+        const cx = rect.left + rect.width / 2
+        const cy = rect.top + rect.height / 2
+        gesture = {
+          mode: 'resize',
+          px: e.clientX, py: e.clientY,
+          s0: Number(v.scale) || 1,
+          c0: Math.max(30, Math.hypot(e.clientX - cx, e.clientY - cy)), // 按下点到中心距离
+        }
+        wrap.classList.add('pv-resizing')
+      } else {
+        // 移动模式
+        gesture = {
+          mode: 'move',
+          px: e.clientX, py: e.clientY,
+          ox: Number(v.x) || 0, oy: Number(v.y) || 0,
+        }
+      }
       const move = (ev) => {
-        if (!dragStart) return
-        CONFIG.layout[m.key] = {
-          ...(CONFIG.layout[m.key] || {}),
-          x: Math.round((dragStart.ox + (ev.clientX - dragStart.px)) / 5) * 5,
-          y: Math.round((dragStart.oy + (ev.clientY - dragStart.py)) / 5) * 5,
+        if (!gesture) return
+        if (gesture.mode === 'move') {
+          CONFIG.layout[m.key] = {
+            ...(CONFIG.layout[m.key] || {}),
+            x: Math.round((gesture.ox + (ev.clientX - gesture.px)) / 5) * 5,
+            y: Math.round((gesture.oy + (ev.clientY - gesture.py)) / 5) * 5,
+          }
+        } else {
+          // 缩放：拖得离中心越远 scale 越大（从 0.3 到 3，步进 0.05）
+          const rect = wrap.getBoundingClientRect()
+          const cx = rect.left + rect.width / 2
+          const cy = rect.top + rect.height / 2
+          const dist = Math.max(30, Math.hypot(ev.clientX - cx, ev.clientY - cy))
+          let ns = Math.round((gesture.s0 * (dist / gesture.c0)) * 20) / 20
+          ns = Math.min(3, Math.max(0.3, ns))
+          CONFIG.layout[m.key] = { ...(CONFIG.layout[m.key] || {}), scale: ns }
         }
         pvApply(m.key)
         pvEmit()
       }
       const up = () => {
-        dragStart = null
+        gesture = null
+        wrap.classList.remove('pv-resizing')
         wrap.removeEventListener('pointermove', move)
         wrap.removeEventListener('pointerup', up)
       }
       wrap.addEventListener('pointermove', move)
       wrap.addEventListener('pointerup', up)
-    })
-    // 缩放（手柄拖动 → 更新 scale，步进 0.05）
-    handle.addEventListener('pointerdown', (e) => {
-      e.preventDefault()
-      e.stopPropagation()
-      handle.setPointerCapture(e.pointerId)
-      const v = CONFIG.layout?.[m.key] || { x: 0, y: 0, scale: 1 }
-      const s0 = Number(v.scale) || 1
-      const start = { px: e.clientX, s0 }
-      const move = (ev) => {
-        const ds = (ev.clientX - start.px) / 120 // 每 120px 变化 1.0
-        let ns = Math.round((start.s0 + ds) * 20) / 20
-        ns = Math.min(3, Math.max(0.3, ns))
-        CONFIG.layout[m.key] = { ...(CONFIG.layout[m.key] || {}), scale: ns }
-        pvApply(m.key)
-        pvEmit()
-      }
-      const up = () => {
-        handle.removeEventListener('pointermove', move)
-        handle.removeEventListener('pointerup', up)
-      }
-      handle.addEventListener('pointermove', move)
-      handle.addEventListener('pointerup', up)
     })
   }
 
