@@ -118,10 +118,10 @@
   .rst:hover { background:rgba(255,111,159,.12); color:var(--accent); }
   .hidden { display:none; }
   .bottom-btns { display:flex; flex-direction:column; gap:10px; margin-top:16px; }
-  /* ---------- 界面排版：屏幕实时预览（竖屏 3:4 = 屏幕 480x640，iframe rotate 匹配屏幕方向） ---------- */
+  /* ---------- 界面排版：屏幕实时预览（横屏 4:3，iframe 不旋转方便查看；内容与屏幕同源） ---------- */
   .layout-preview-wrap { display:flex; flex-direction:column; gap:14px; margin-bottom:6px; }
-  .layout-preview { position:relative; flex-shrink:0; width:100%; max-width:420px; margin:0 auto; aspect-ratio:3/4; border-radius:14px; overflow:hidden; box-shadow:0 6px 24px rgba(90,40,90,.18); border:1px solid rgba(255,255,255,.7); background:#0d0d18; }
-  .layout-preview iframe { position:absolute; top:50%; left:50%; width:800px; height:600px; border:none; transform:translate(-50%,-50%) rotate(-90deg) scale(var(--pv-scale,0.5)); transform-origin:center center; }
+  .layout-preview { position:relative; flex-shrink:0; width:100%; max-width:520px; margin:0 auto; aspect-ratio:4/3; border-radius:14px; overflow:hidden; box-shadow:0 6px 24px rgba(90,40,90,.18); border:1px solid rgba(255,255,255,.7); background:#0d0d18; }
+  .layout-preview iframe { position:absolute; top:0; left:0; width:800px; height:600px; border:none; transform:scale(var(--pv-scale,0.65)); transform-origin:top left; }
   .layout-preview .pv-hint { position:absolute; left:10px; bottom:8px; z-index:5; font-size:11px; color:rgba(255,255,255,.75); background:rgba(0,0,0,.35); padding:2px 10px; border-radius:999px; pointer-events:none; backdrop-filter:blur(4px); }
   .layout-preview .pv-loading { position:absolute; inset:0; z-index:4; display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,.6); font-size:13px; background:rgba(13,13,24,.6); }
   .layout-preview.loaded .pv-loading { display:none; }
@@ -1094,10 +1094,10 @@ const pvFrame = $('layout-preview-frame');
 const pvBox = $('layout-preview');
 let pvSyncing = false; // 防止"预览→滑条→预览"同步循环
 function pvScaleFit() {
-  // 预览容器宽度自适应缩放（iframe rotate -90° 后有效宽 = 600，竖屏 3:4 = 屏幕 480x640）
+  // 预览容器宽度自适应缩放（800 基准 = viewport 画布 → 容器宽，横屏 4:3）
   if (!pvBox) return;
-  const w = pvBox.clientWidth || 300;
-  pvBox.style.setProperty('--pv-scale', (w / 600).toFixed(3));
+  const w = pvBox.clientWidth || 320;
+  pvBox.style.setProperty('--pv-scale', (w / 800).toFixed(3));
 }
 window.addEventListener('resize', pvScaleFit);
 function initLayoutPreview() {
