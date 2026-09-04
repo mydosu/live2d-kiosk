@@ -746,11 +746,11 @@ if (IS_PREVIEW) {
 // 交互直接挂在模块自身（不包裹额外层，DOM 与 kiosk 一致 → 布局/位置一致）
 /* 预览模式：可拖拽/缩放模块（模型无占位框，位置大小由后台滑条调节） */
 const PV_MODULES = [
-  // measure：虚线框测量目标（文字内容元素）——模块本身被 flex 拉伸到面板宽，测文字才贴合所见
+  // measure：虚线框测量目标（用 Range 选文字边界贴合可见文字；元素本身被 flex 拉伸到面板宽）
   { id: 'time-block', key: 'time', name: '时间', measure: '#time-display' },
   { id: 'date-display', key: 'date', name: '日期' },
   { id: 'weather-display', key: 'weather', name: '天气' },
-  { id: 'chat-bubble', key: 'bubble', name: '气泡' },
+  { id: 'chat-bubble', key: 'bubble', name: '气泡', wrapBox: true }, // wrapBox：框住气泡元素本身（含 padding/圆角）
 ]
 
 function pvEmit() {
@@ -782,18 +782,23 @@ function initPreview() {
     box.className = 'pv-box'
     document.body.appendChild(box)
 
-    // 同步 box 位置：测量目标 = 文字内容元素（time 用内部 #time-display；其余模块自身即文字，
-    // 但也被 flex 拉伸——用 Range 选文字实际边界，框贴合可见文字而非整块拉伸区域）
+    // 同步 box 位置：
+    // - wrapBox（气泡）：直接量元素本身（含 padding/圆角，不贴合文字）
+    // - measure（时间）：用 Range 选内部文字元素边界（元素是块级被 flex 拉伸，测元素 rect 会过长）
+    // - 其余（日期/天气）：Range 选文字边界
     const syncBox = () => {
       let er
-      if (m.measure) {
-        const inner = el.querySelector(m.measure)
-        er = inner ? inner.getBoundingClientRect() : el.getBoundingClientRect()
+      if (m.wrapBox) {
+        er = el.getBoundingClientRect()
       } else {
-        const rg = document.createRange()
-        rg.selectNodeContents(el)
-        const rr = rg.getBoundingClientRect()
-        er = rr.width > 0 ? rr : el.getBoundingClientRect()
+        const src = m.measure ? el.querySelector(m.measure) : el
+        let rr = null
+        if (src) {
+          const rg = document.createRange()
+          rg.selectNodeContents(src)
+          rr = rg.getBoundingClientRect()
+        }
+        er = (rr && rr.width > 0) ? rr : src.getBoundingClientRect()
       }
       box.style.left = er.left + 'px'
       box.style.top = er.top + 'px'
