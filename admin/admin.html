@@ -989,15 +989,33 @@ $('btn-test-astrbot').addEventListener('click', testAstrbot);
 refreshShellStatus();
 setInterval(refreshShellStatus, 10000);
 
-// ---------- 信息获取方式（多选共存） ----------
+// ---------- 信息获取方式（多选共存，开关实时生效无需点保存） ----------
+async function saveNetSourcesLive() {
+  const srcs = [];
+  if ($('sw-wifi').checked) srcs.push('wifi');
+  if ($('sw-usb').checked) srcs.push('usb');
+  const net = srcs.length ? srcs : ['wifi']; // 至少保留一个
+  draft.netSources = net;
+  // 立即持久化（实时生效，不依赖保存按钮）
+  try { await api('/api/config', 'POST', { netSources: net }); } catch { /* 后台不可达忽略 */ }
+}
 ['sw-wifi','sw-usb'].forEach(id => {
-  $(id).addEventListener('change', (e) => {
-    const srcs = [];
-    if ($('sw-wifi').checked) srcs.push('wifi');
-    if ($('sw-usb').checked) srcs.push('usb');
-    draft.netSources = srcs.length ? srcs : ['wifi']; // 至少保留一个
+  $(id).addEventListener('change', async (e) => {
+    const wifiOn = $('sw-wifi').checked;
     markDirty('src');
-    refreshWifiStatus();
+    if (id === 'sw-wifi') {
+      if (wifiOn) {
+        toast('WiFi 已开启，正在扫描…');
+        $('btn-scan').click(); // 复用扫描逻辑，立即列出可用网络
+      } else {
+        await fetch(API + '/api/wifi/disconnect', { method: 'POST' });
+        toast('WiFi 已关闭');
+        refreshWifiStatus();
+      }
+    } else {
+      toast(wifiOn ? 'USB 共享网络已开启' : 'USB 共享网络已关闭');
+    }
+    await saveNetSourcesLive();
   });
 });
 
