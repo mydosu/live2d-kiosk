@@ -44,8 +44,6 @@ if (loader) {
   loader.style.top = '0px'
 }
 const toastEl = $('toast')
-const modelBadge = $('model-badge')
-const statusDot = $('status-dot')
 const timeDisplay = $('time-display')
 const dateDisplay = $('date-display')
 const weatherDisplay = $('weather-display')
@@ -509,9 +507,7 @@ function toast(msg, isErr = false) {
   toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2200)
 }
 
-function setBusy(busy) {
-  statusDot.classList.toggle('busy', busy)
-}
+function setBusy() { /* 绿点已删除，保留空函数占位避免调用点报错 */ }
 
 /* ---------------- Pixi 初始化 ---------------- */
 async function initApp() {
@@ -632,7 +628,6 @@ async function loadModelByName(name, { silent = false } = {}) {
       playTapMotion()
     })
 
-    modelBadge.textContent = name
     currentModelName = name
     setBusy(false)
     loader.classList.add('hidden')
@@ -788,6 +783,12 @@ function initPreview() {
     const box = document.createElement('div')
     box.className = 'pv-box'
     document.body.appendChild(box)
+    // 四角圆点指示器（提示任意角/边缘可拖拽缩放）
+    for (const pos of ['tl', 'tr', 'bl', 'br']) {
+      const dot = document.createElement('div')
+      dot.className = 'pv-dot ' + pos
+      box.appendChild(dot)
+    }
 
     // 同步 box 位置：模块 getBoundingClientRect（viewport 坐标）→ box fixed 定位
     const syncBox = () => {
@@ -804,26 +805,26 @@ function initPreview() {
       m.__ro = ro
     }
 
-    // 统一指针交互：边缘→缩放，内部→移动
-    let gesture = null // { mode:'move'|'resize', px,py, ox,oy, s0, c0 }
+    // 统一指针交互：边缘/角→缩放（全方位），内部→移动
+    let gesture = null // { mode:'move'|'resize', px,py, ox,oy, s0, edge }
     wrap.addEventListener('pointerdown', (e) => {
       e.preventDefault()
       wrap.setPointerCapture(e.pointerId)
       const v = CONFIG.layout?.[m.key] || { x: 0, y: 0, scale: 1 }
       const rect = box.getBoundingClientRect() // 用虚线框（el 实际渲染矩形）做边缘检测——所见即所得
-      // 边缘检测（含视觉边框区域）
-      const nearEdge =
-        e.clientX - rect.left <= EDGE || rect.right - e.clientX <= EDGE ||
-        e.clientY - rect.top <= EDGE || rect.bottom - e.clientY <= EDGE
-      if (nearEdge) {
-        // 缩放模式：以 wrap 中心为基准，拖拽距离比例 → scale
-        const cx = rect.left + rect.width / 2
-        const cy = rect.top + rect.height / 2
+      // 识别最近边缘/角（八个方向）：距某边 ≤ EDGE → 缩放；否则移动
+      const dxL = e.clientX - rect.left, dxR = rect.right - e.clientX
+      const dyT = e.clientY - rect.top, dyB = rect.bottom - e.clientY
+      const minD = Math.min(dxL, dxR, dyT, dyB)
+      if (minD <= EDGE) {
+        const h = dxL < dxR ? 'L' : 'R' // 水平方向（左/右边缘）
+        const vv = dyT < dyB ? 'T' : 'B' // 垂直方向（上/下边缘）
         gesture = {
           mode: 'resize',
           px: e.clientX, py: e.clientY,
           s0: Number(v.scale) || 1,
-          c0: Math.max(30, Math.hypot(e.clientX - cx, e.clientY - cy)), // 按下点到中心距离
+          edge: (minD === dxL || minD === dxR) ? (minD === dxL ? 'L' : 'R') : (minD === dyT ? 'T' : 'B'),
+          corner: minD === dxL || minD === dxR ? (minD === dyT || minD === dyB ? h + vv : null) : null,
         }
         wrap.classList.add('pv-resizing')
         box.classList.add('pv-resizing')
@@ -844,12 +845,22 @@ function initPreview() {
             y: Math.round((gesture.oy + (ev.clientY - gesture.py)) / 5) * 5,
           }
         } else {
-          // 缩放：拖得离中心越远 scale 越大（从 0.3 到 3，步进 0.05）
+          // 全方位缩放：按拖拽方向（边缘→该轴位移；角→对角线位移）换算 scale，步进 0.01 丝滑
           const br = box.getBoundingClientRect()
-          const cx = br.left + br.width / 2
-          const cy = br.top + br.height / 2
-          const dist = Math.max(30, Math.hypot(ev.clientX - cx, ev.clientY - cy))
-          let ns = Math.round((gesture.s0 * (dist / gesture.c0)) * 20) / 20
+          let ds = 0
+          if (gesture.corner) {
+            // 角：用指向对角的位移（水平+垂直综合）
+            const sign = (gesture.corner.includes('R') ? 1 : -1) + (gesture.corner.includes('B') ? 1 : -1)
+            const dx = ev.clientX - gesture.px
+            const dy = ev.clientY - gesture.py
+            ds = ((dx * (gesture.corner.includes('R') ? 1 : -1)) + (dy * (gesture.corner.includes('B') ? 1 : -1))) / 2
+          } else if (gesture.edge === 'L' || gesture.edge === 'R') {
+            ds = (ev.clientX - gesture.px) * (gesture.edge === 'R' ? 1 : -1)
+          } else {
+            ds = (ev.clientY - gesture.py) * (gesture.edge === 'B' ? 1 : -1)
+          }
+          // 每 120px 拖拽变化 1.0 缩放；保持中心稳定（scale 围绕 wrap 中心缩放）
+          let ns = Math.round((gesture.s0 + ds / 120) * 100) / 100
           ns = Math.min(3, Math.max(0.3, ns))
           CONFIG.layout[m.key] = { ...(CONFIG.layout[m.key] || {}), scale: ns }
         }

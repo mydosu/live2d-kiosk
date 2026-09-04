@@ -355,7 +355,7 @@
           <div class="layout-preview" id="layout-preview">
             <div class="pv-loading">预览加载中…</div>
             <iframe id="layout-preview-frame" title="屏幕实时预览" scrolling="no"></iframe>
-            <div class="pv-hint">拖动模块 · 拖右下角缩放</div>
+            <div class="pv-hint">拖动模块移动 · 拖边缘/四角缩放</div>
             <div class="pv-corner"></div>
           </div>
           <div style="flex:1;min-width:0;width:100%">
@@ -1090,7 +1090,7 @@ const pvFrame = $('layout-preview-frame');
 const pvBox = $('layout-preview');
 let pvSyncing = false; // 防止"预览→滑条→预览"同步循环
 function pvScaleFit() {
-  // 预览容器宽度自适应缩放（800 基准 → 容器宽，横屏 4:3）
+  // 预览容器宽度自适应缩放（800 基准 = viewport 画布 → 容器宽，横屏 4:3）
   if (!pvBox) return;
   const w = pvBox.clientWidth || 320;
   pvBox.style.setProperty('--pv-scale', (w / 800).toFixed(3));

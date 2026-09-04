@@ -52,8 +52,8 @@ export DISPLAY=:0
 export XDG_RUNTIME_DIR=/run/user/1000
 # 注意：不要设置 LD_LIBRARY_PATH —— chrome 的 RPATH 已指向自带 ANGLE 库
 # --use-angle=gles：ANGLE GLES 后端直通系统 mesa → Panfrost 硬件加速（用户验证可用）
-# --window-size=480,640：强制窗口=屏幕（默认 800x600 窗口 + 全屏失败会导致
-# viewport 与屏幕不一致 → 画面变形/白屏）
+# --window-size=640,480：强制窗口=屏幕逻辑分辨率（rotate left 后 640x480，与物理屏 1:1 对应；
+# 默认 800x600 窗口 + 全屏失败会导致 viewport 与屏幕不一致 → 画面变形/白屏）
 
 # CDP keep-alive：保持挂起 evaluate，强制 Chromium 合成器持续出帧
 # （否则合成器退避，无调试连接时只有 ~3fps，挂起 evaluate 时 ~12fps）
@@ -61,6 +61,7 @@ export XDG_RUNTIME_DIR=/run/user/1000
 
 exec dbus-run-session -- /usr/bin/chromium \
   --kiosk \
+  --start-fullscreen \
   --no-first-run \
   --disable-session-crashed-bubble \
   --disable-infobars \
@@ -90,8 +91,8 @@ exec dbus-run-session -- /usr/bin/chromium \
   --no-sandbox \
   --remote-debugging-port=9222 \
   --start-fullscreen \
-  --window-size=480,640 \
+  --window-size=640,480 \
   --window-position=0,0 \
   --check-for-update-interval=31536000 \
-  "http://localhost:80/?kiosk=1&v=20260902b" > /tmp/kiosk-chromium.log 2>&1
+  "http://localhost:80/?kiosk=1&v=20260903" > /tmp/kiosk-chromium.log 2>&1
 '
