@@ -255,14 +255,10 @@
           </div>
         </div>
         <div id="bt-box" style="margin-top:18px;border-top:1px solid rgba(255,255,255,.6);padding-top:14px">
-          <div class="sub" style="margin:0 0 8px">蓝牙设备（扫描并连接耳机/音箱等）</div>
-          <div class="sub" style="margin:0 0 8px;font-size:12px;opacity:.75">提示：手机/耳机需保持「蓝牙设置页」打开（可被发现窗口约 2 分钟），否则扫不到</div>
+          <div class="sub" style="margin:0 0 8px">蓝牙（手机主动连接板子后自动显示）</div>
           <div class="row" style="flex-wrap:wrap"><span style="font-size:13px">状态：<b id="bt-status">未知</b></span>
-            <button class="btn btn-primary" id="btn-bt-scan" style="padding:6px 12px;font-size:12px">扫描</button>
             <button class="btn" id="btn-bt-disconnect" style="padding:6px 12px;font-size:12px;background:#e8e8f0;color:#4a4a5a">断开</button>
           </div>
-          <select id="sel-bt" style="width:100%;margin:8px 0"></select>
-          <button class="btn btn-primary" id="btn-bt-connect" style="padding:6px 12px;font-size:12px">连接</button>
         </div>
       </div>
     </div>
@@ -1073,58 +1069,17 @@ async function refreshBtStatus() {
     $('bt-status').textContent = c.length ? ('已连接 ' + c.map(x => x.name || x.mac).join('、')) : '未连接';
   } catch { $('bt-status').textContent = '状态获取失败'; }
 }
-$('btn-bt-scan').addEventListener('click', async () => {
-  $('btn-bt-scan').disabled = true;
-  $('btn-bt-scan').textContent = '扫描中…';
-  toast('正在扫描蓝牙设备…（实时显示发现的设备）');
-  try {
-    await fetch(API + '/api/bt/scan').then(x => x.json());
-  } catch { /* 扫描已启动或失败，轮询会体现 */ }
-  const sel = $('sel-bt');
-  let lastMac = sel.value; // 保留当前选中
-  const timer = setInterval(async () => {
-    try {
-      const r = await fetch(API + '/api/bt/devices').then(x => x.json());
-      const devs = r.devices || [];
-      sel.innerHTML = '';
-      if (!devs.length) {
-        sel.innerHTML = '<option>扫描中…（尚未发现设备）</option>';
-      } else {
-        devs.forEach(d => {
-          const o = document.createElement('option');
-          o.value = d.mac;
-          o.textContent = `${d.name}  (${d.mac})`;
-          sel.appendChild(o);
-        });
-        if (devs.some(d => d.mac === lastMac)) sel.value = lastMac;
-      }
-      if (!r.scanning) {
-        clearInterval(timer);
-        $('btn-bt-scan').disabled = false;
-        $('btn-bt-scan').textContent = '扫描';
-        toast(devs.length ? `扫描完成，发现 ${devs.length} 个设备` : '扫描完成，未发现设备');
-      }
-    } catch { /* 网络抖动忽略，继续轮询 */ }
-  }, 2000);
-});
-$('btn-bt-connect').addEventListener('click', async () => {
-  const mac = $('sel-bt').value;
-  if (!mac || mac === '未发现蓝牙设备') return toast('请先扫描并选择设备');
-  $('btn-bt-connect').disabled = true;
-  toast('正在连接 ' + mac + '…');
-  try {
-    const r = await fetch(API + '/api/bt/connect', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({mac})}).then(x => x.json());
-    if (r.error) return toast(r.error);
-    toast(r.msg);
-    setTimeout(refreshBtStatus, 4000);
-  } catch { toast('连接失败'); }
-  $('btn-bt-connect').disabled = false;
-});
 $('btn-bt-disconnect').addEventListener('click', async () => {
-  const mac = $('sel-bt').value;
-  await fetch(API + '/api/bt/disconnect', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({mac})});
-  toast('蓝牙已断开');
-  refreshBtStatus();
+  try {
+    const st = await fetch(API + '/api/bt/status').then(x => x.json());
+    const connected = st.connected || [];
+    if (!connected.length) return toast('当前没有已连接的蓝牙设备');
+    for (const d of connected) {
+      await fetch(API + '/api/bt/disconnect', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({mac: d.mac})});
+    }
+    toast('蓝牙已断开');
+    refreshBtStatus();
+  } catch { toast('断开失败'); }
 });
 setInterval(refreshBtStatus, 15000);
 
