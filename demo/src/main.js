@@ -774,7 +774,7 @@ function initPreview() {
   if (chatBubble.classList.contains('empty')) {
     chatBubble.textContent = CONFIG.bubblePlaceholder || '等待 agent 消息…'
   }
-  // 为每个模块包裹 .pv-wrap + 标签；虚线框即缩放手柄（拖边框=缩放，拖内部=移动）
+  // 为每个模块包裹 .pv-wrap + 精确虚线框 overlay（getBoundingClientRect 实时测量，字体/缩放自适应）
   const EDGE = 10 // 边缘阈值 px：按下点距 wrap 边缘 ≤ 此值 → 缩放模式
   for (const m of PV_MODULES) {
     const el = $(m.id)
@@ -784,11 +784,30 @@ function initPreview() {
     wrap.className = 'pv-wrap'
     el.parentNode.insertBefore(wrap, el)
     wrap.appendChild(el)
-    // 名称标签
+    // 名称标签（挂在 wrap 上，box 上方）
     const label = document.createElement('div')
     label.className = 'pv-label'
     label.textContent = m.name
     wrap.appendChild(label)
+    // 虚线框 overlay：fixed 挂 body，直接用 viewport 坐标精确贴合模块渲染矩形（不受 wrap transform 缩放影响）
+    const box = document.createElement('div')
+    box.className = 'pv-box'
+    document.body.appendChild(box)
+
+    // 同步 box 位置：模块 getBoundingClientRect（viewport 坐标）→ box fixed 定位
+    const syncBox = () => {
+      const er = el.getBoundingClientRect()
+      box.style.left = er.left + 'px'
+      box.style.top = er.top + 'px'
+      box.style.width = er.width + 'px'
+      box.style.height = er.height + 'px'
+    }
+    // 内容变化（时钟/天气/字体）时 box 跟随
+    if (typeof ResizeObserver !== 'undefined') {
+      const ro = new ResizeObserver(syncBox)
+      ro.observe(el)
+      m.__ro = ro
+    }
 
     // 统一指针交互：边缘→缩放，内部→移动
     let gesture = null // { mode:'move'|'resize', px,py, ox,oy, s0, c0 }
@@ -796,8 +815,8 @@ function initPreview() {
       e.preventDefault()
       wrap.setPointerCapture(e.pointerId)
       const v = CONFIG.layout?.[m.key] || { x: 0, y: 0, scale: 1 }
-      const rect = wrap.getBoundingClientRect()
-      // 边缘检测（含 outline-offset 的视觉边框区域）
+      const rect = box.getBoundingClientRect() // 用虚线框（el 实际渲染矩形）做边缘检测——所见即所得
+      // 边缘检测（含视觉边框区域）
       const nearEdge =
         e.clientX - rect.left <= EDGE || rect.right - e.clientX <= EDGE ||
         e.clientY - rect.top <= EDGE || rect.bottom - e.clientY <= EDGE
@@ -812,6 +831,7 @@ function initPreview() {
           c0: Math.max(30, Math.hypot(e.clientX - cx, e.clientY - cy)), // 按下点到中心距离
         }
         wrap.classList.add('pv-resizing')
+        box.classList.add('pv-resizing')
       } else {
         // 移动模式
         gesture = {
@@ -830,26 +850,29 @@ function initPreview() {
           }
         } else {
           // 缩放：拖得离中心越远 scale 越大（从 0.3 到 3，步进 0.05）
-          const rect = wrap.getBoundingClientRect()
-          const cx = rect.left + rect.width / 2
-          const cy = rect.top + rect.height / 2
+          const br = box.getBoundingClientRect()
+          const cx = br.left + br.width / 2
+          const cy = br.top + br.height / 2
           const dist = Math.max(30, Math.hypot(ev.clientX - cx, ev.clientY - cy))
           let ns = Math.round((gesture.s0 * (dist / gesture.c0)) * 20) / 20
           ns = Math.min(3, Math.max(0.3, ns))
           CONFIG.layout[m.key] = { ...(CONFIG.layout[m.key] || {}), scale: ns }
         }
         pvApply(m.key)
+        syncBox()
         pvEmit()
       }
       const up = () => {
         gesture = null
         wrap.classList.remove('pv-resizing')
+        box.classList.remove('pv-resizing')
         wrap.removeEventListener('pointermove', move)
         wrap.removeEventListener('pointerup', up)
       }
       wrap.addEventListener('pointermove', move)
       wrap.addEventListener('pointerup', up)
     })
+    syncBox()
   }
 
   // 接收父窗口（后台）的布局同步消息：滑条改动实时反映到预览

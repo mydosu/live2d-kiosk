@@ -145,31 +145,33 @@
         box-shadow: 0 2px 8px rgba(255, 111, 159, 0.5);
         pointer-events: none;
       }
-      /* 预览包裹层：贴合模块内容尺寸 + 虚线框（拖边框=缩放，拖内部=移动） */
+      /* 预览包裹层：贴合模块内容尺寸（拖边框=缩放，拖内部=移动） */
       body.preview-mode .pv-wrap {
         position: relative;
         width: fit-content;
         max-width: 100%;
         align-self: flex-start; /* 防 flex 水平拉伸（side-panel 是 column 布局） */
-        outline: 1.5px dashed rgba(255, 111, 159, 0.7);
-        outline-offset: 2px;
-        border-radius: 8px;
         cursor: move;
         touch-action: none;
         user-select: none;
-        transition: outline-color 0.15s ease;
       }
-      /* hover/按下边框时提示可缩放 */
-      body.preview-mode .pv-wrap:hover { outline-color: #ff6f9f; outline-width: 2px; }
-      body.preview-mode .pv-wrap.pv-resizing { outline-color: #ff2d7a; outline-width: 2.5px; }
-      /* 四角缩放光标提示（右下角） */
-      body.preview-mode .pv-wrap::after {
-        content: ''; position: absolute; right: -5px; bottom: -5px; z-index: 71;
-        width: 12px; height: 12px;
-        border-right: 2px solid rgba(255, 111, 159, 0.85);
-        border-bottom: 2px solid rgba(255, 111, 159, 0.85);
-        border-radius: 2px;
+      /* 虚线框 overlay：fixed 于 body，getBoundingClientRect 实时测量模块实际渲染位置（viewport 坐标直接对齐，不受 wrap transform 影响） */
+      body.preview-mode .pv-box {
+        position: fixed;
         pointer-events: none;
+        z-index: 69;
+        border: 1.5px dashed rgba(255, 111, 159, 0.85);
+        border-radius: 6px;
+        box-sizing: border-box;
+      }
+      body.preview-mode .pv-box.pv-resizing { border-color: #ff2d7a; border-width: 2.5px; }
+      /* 右下角缩放提示（贴合模块右下角） */
+      body.preview-mode .pv-box::after {
+        content: ''; position: absolute; right: -5px; bottom: -5px;
+        width: 11px; height: 11px;
+        border-right: 2px solid rgba(255, 111, 159, 0.9);
+        border-bottom: 2px solid rgba(255, 111, 159, 0.9);
+        border-radius: 2px;
       }
 
       /* ---------- 加载遮罩 ---------- */
