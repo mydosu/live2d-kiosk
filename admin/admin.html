@@ -337,6 +337,10 @@
           <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)">WiFi<input type="color" id="col-wifi" value="#ffffff" style="width:34px;height:26px;border:none;padding:0;background:none;cursor:pointer" /></label>
           <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)">蓝牙<input type="color" id="col-bt" value="#ffffff" style="width:34px;height:26px;border:none;padding:0;background:none;cursor:pointer" /></label>
         </div>
+        <div class="row" style="justify-content:flex-start;gap:14px"><span style="margin-right:auto">连接圆点颜色</span>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)">WiFi 圆点<input type="color" id="col-dot-wifi" value="#67e8a9" style="width:34px;height:26px;border:none;padding:0;background:none;cursor:pointer" /></label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)">蓝牙圆点<input type="color" id="col-dot-bt" value="#8fb7ff" style="width:34px;height:26px;border:none;padding:0;background:none;cursor:pointer" /></label>
+        </div>
         <div class="sub" style="margin:0">提示：消息较长时气泡会自动循环滚动展示</div>
         <div class="row"><span>气泡背景色</span>
           <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)">颜色<input type="color" id="col-bubble-bg" value="#7c5cff" style="width:34px;height:26px;border:none;padding:0;background:none;cursor:pointer" /></label>
@@ -490,7 +494,7 @@ async function saveCard(card, fields) {
   if (card === 'layout') syncLayoutPreview();
 }
 const SAVE_FIELDS = {
-  display: ['showTime','showDate','showWeather','showBubble','showWifi','showBt','bubblePlaceholder','bubbleScrollSpeed','bubbleHold','bubbleFontSize','fontColors','bubbleBgColor','bgTheme','fontStyles','city','weatherUnit','weatherProvider','weatherKey'],
+  display: ['showTime','showDate','showWeather','showBubble','showWifi','showBt','bubblePlaceholder','bubbleScrollSpeed','bubbleHold','bubbleFontSize','fontColors','dotColors','bubbleBgColor','bgTheme','fontStyles','city','weatherUnit','weatherProvider','weatherKey'],
   layout: ['layout'],
   agent: ['astrbotUrl','astrbotKey','astrbotSession'],
 };
@@ -531,6 +535,7 @@ function resetField(field, card) {
     case 'weatherProvider': $('sel-weather-provider').value = dv; break;
     case 'weatherKey': $('inp-weather-key').value = dv; break;
     case 'fontColors': $('col-time').value = dv.time; $('col-date').value = dv.date; $('col-weather').value = dv.weather; $('col-bubble').value = dv.bubble; $('col-wifi').value = dv.wifi; $('col-bt').value = dv.bt; break;
+    case 'dotColors': $('col-dot-wifi').value = dv.wifi; $('col-dot-bt').value = dv.bt; break;
     case 'astrbotUrl': $('inp-astrbot-url').value = dv; break;
     case 'astrbotKey': $('inp-astrbot-key').value = dv; break;
     case 'astrbotSession': $('sel-session').value = dv; refreshSessions(true); break;
@@ -581,6 +586,7 @@ function attachAllResets() {
   attachReset($('sel-weather-provider'), 'weatherProvider', 'display');
   attachReset($('inp-weather-key'), 'weatherKey', 'display');
   ['time','date','weather','bubble','wifi','bt'].forEach(k => attachReset($('col-' + k), 'fontColors', 'display'));
+  ['wifi','bt'].forEach(k => attachReset($('col-dot-' + k), 'dotColors', 'display'));
   attachReset($('inp-astrbot-url'), 'astrbotUrl', 'agent');
   attachReset($('inp-astrbot-key'), 'astrbotKey', 'agent');
   attachReset($('sel-session'), 'astrbotSession', 'agent');
@@ -638,6 +644,9 @@ function render() {
   $('col-bubble-bg').value = config.bubbleBgColor || '#7c5cff';
   const fs = config.fontStyles || {};
   ['time','date','weather','bubble','wifi','bt'].forEach(k => { $('sel-font-' + k).value = fs[k] || 'default'; });
+  const dc = config.dotColors || {};
+  $('col-dot-wifi').value = dc.wifi || '#67e8a9';
+  $('col-dot-bt').value = dc.bt || '#8fb7ff';
   // 背景主题选中态
   document.querySelectorAll('.bg-chip').forEach(b => b.classList.toggle('active', b.dataset.theme === (config.bgTheme || 'aurora')));
   renderBgImage();
@@ -714,6 +723,13 @@ bindPair('rng-fontsize', 'num-fontsize', (v) => { $('fontsize-val').textContent 
 });
 // 气泡背景色
 $('col-bubble-bg').addEventListener('input', (e) => draftField('bubbleBgColor', e.target.value));
+// 连接状态圆点颜色
+['wifi','bt'].forEach(k => {
+  $('col-dot-' + k).addEventListener('input', (e) => {
+    draft.dotColors = { ...(draft.dotColors || config.dotColors || {}), [k]: e.target.value };
+    markDirty('display');
+  });
+});
 // 字体风格（每模块）
 ['time','date','weather','bubble','wifi','bt'].forEach(k => {
   $('sel-font-' + k).addEventListener('change', (e) => {

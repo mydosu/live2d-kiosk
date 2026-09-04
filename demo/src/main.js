@@ -75,6 +75,7 @@ let CONFIG = {
   bubblePlaceholder: '等待 agent 消息…', // 气泡空消息占位文本
   bubbleFontSize: 14, // 气泡字体大小基准（px，长消息自动缩小）
   fontColors: { time: '#ffffff', date: '#9a9ab0', weather: '#ffffff', bubble: '#e8e8f2', wifi: '#ffffff', bt: '#ffffff' }, // 各模块字体颜色
+  dotColors: { wifi: '#67e8a9', bt: '#8fb7ff' }, // 连接状态圆点颜色（在线时；离线自动灰）
   bubbleBgColor: '#7c5cff', // 气泡背景色（半透明磨砂渐变基色）
   bgTheme: 'aurora', // 屏幕背景主题：aurora(极光) | pink(粉嫩) | dark(深色) | mint(薄荷) | sunset(日落)
   fontStyles: { time: 'default', date: 'default', weather: 'default', bubble: 'default', wifi: 'default', bt: 'default' }, // 各模块字体风格（每模块独立选择）
@@ -315,6 +316,16 @@ function applyDisplayConfig() {
   if (fc.bubble) chatBubble.style.color = fc.bubble
   if (fc.wifi && wifiStatus) wifiStatus.style.color = fc.wifi
   if (fc.bt && btStatus) btStatus.style.color = fc.bt
+  // 连接状态圆点颜色（在线色；离线时 CSS .off 自动灰）
+  const dc = CONFIG.dotColors || {}
+  if (wifiStatus) {
+    const dot = wifiStatus.querySelector('.st-dot')
+    if (dot && dc.wifi) dot.style.setProperty('--dot-on', dc.wifi)
+  }
+  if (btStatus) {
+    const dot = btStatus.querySelector('.st-dot')
+    if (dot && dc.bt) dot.style.setProperty('--dot-on', dc.bt)
+  }
   applyLayout()
   applyBg()
   applyBubbleBg()
@@ -888,19 +899,20 @@ function initPreview() {
       el.setPointerCapture(e.pointerId)
       const v = CONFIG.layout?.[m.key] || { x: 0, y: 0, scale: 1 }
       const rect = box.getBoundingClientRect() // 用虚线框（el 实际渲染矩形）做边缘检测——所见即所得
-      // 识别最近边缘/角（八个方向）：距某边 ≤ EDGE → 缩放；否则移动
+      // 识别四角（dx 且 dy 都 ≤ EDGE）→ 缩放；其余一律移动。
+      // 注：不按"距任一边 ≤ EDGE"判缩放——小模块（状态行高 ~21px）按中心 dy 也 < EDGE，
+      //     会导致移动被误判为缩放；四角判定让小模块中心可移动、角上仍可缩放。
       const dxL = e.clientX - rect.left, dxR = rect.right - e.clientX
       const dyT = e.clientY - rect.top, dyB = rect.bottom - e.clientY
-      const minD = Math.min(dxL, dxR, dyT, dyB)
-      if (minD <= EDGE) {
-        const h = dxL < dxR ? 'L' : 'R' // 水平方向（左/右边缘）
-        const vv = dyT < dyB ? 'T' : 'B' // 垂直方向（上/下边缘）
+      const inCorner = Math.min(dxL, dxR) <= EDGE && Math.min(dyT, dyB) <= EDGE
+      if (inCorner) {
+        const h = dxL <= dxR ? 'L' : 'R' // 水平方向（左/右）
+        const vv = dyT <= dyB ? 'T' : 'B' // 垂直方向（上/下）
         gesture = {
           mode: 'resize',
           px: e.clientX, py: e.clientY,
           s0: Number(v.scale) || 1,
-          edge: (minD === dxL || minD === dxR) ? (minD === dxL ? 'L' : 'R') : (minD === dyT ? 'T' : 'B'),
-          corner: minD === dxL || minD === dxR ? (minD === dyT || minD === dyB ? h + vv : null) : null,
+          corner: h + vv,
         }
         el.classList.add('pv-resizing')
         box.classList.add('pv-resizing')

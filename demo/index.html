@@ -127,13 +127,13 @@
         width: 6px;
         height: 6px;
         border-radius: 50%;
-        background: currentColor;
+        background: var(--dot-on, currentColor); /* 在线色由配置注入（--dot-on）；未设置跟随文字色 */
         opacity: 0.9;
         flex-shrink: 0;
       }
-      #wifi-status .st-dot { background: #67e8a9; }  /* 已连接：柔和绿点 */
+      #wifi-status .st-dot { background: var(--dot-on, #67e8a9); }  /* 已连接：柔和绿点（可后台配置） */
       #wifi-status.off .st-dot { background: var(--text-dim); }
-      #bt-status .st-dot { background: #8fb7ff; }    /* 已连接：柔和蓝点 */
+      #bt-status .st-dot { background: var(--dot-on, #8fb7ff); }    /* 已连接：柔和蓝点（可后台配置） */
       #bt-status.off .st-dot { background: var(--text-dim); }
       #chat-bubble {
         background: linear-gradient(135deg, rgba(124, 92, 255, 0.88) 0%, rgba(124, 92, 255, 0.55) 60%, rgba(124, 92, 255, 0.35) 100%);
