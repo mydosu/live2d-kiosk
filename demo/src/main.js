@@ -48,6 +48,8 @@ const timeDisplay = $('time-display')
 const dateDisplay = $('date-display')
 const weatherDisplay = $('weather-display')
 const chatBubble = $('chat-bubble')
+const wifiStatus = $('wifi-status')
+const btStatus = $('bt-status')
 
 /* ---------------- 状态 ---------------- */
 let app = null
@@ -72,10 +74,12 @@ let CONFIG = {
   bubbleHold: 0, // 气泡滞留秒数（0 = 一直显示，直到下一条消息替换）
   bubblePlaceholder: '等待 agent 消息…', // 气泡空消息占位文本
   bubbleFontSize: 14, // 气泡字体大小基准（px，长消息自动缩小）
-  fontColors: { time: '#ffffff', date: '#9a9ab0', weather: '#ffffff', bubble: '#e8e8f2' }, // 各模块字体颜色
+  fontColors: { time: '#ffffff', date: '#9a9ab0', weather: '#ffffff', bubble: '#e8e8f2', wifi: '#ffffff', bt: '#ffffff' }, // 各模块字体颜色
   bubbleBgColor: '#7c5cff', // 气泡背景色（半透明磨砂渐变基色）
   bgTheme: 'aurora', // 屏幕背景主题：aurora(极光) | pink(粉嫩) | dark(深色) | mint(薄荷) | sunset(日落)
-  fontStyles: { time: 'default', date: 'default', weather: 'default', bubble: 'default' }, // 各模块字体风格（每模块独立选择）
+  fontStyles: { time: 'default', date: 'default', weather: 'default', bubble: 'default', wifi: 'default', bt: 'default' }, // 各模块字体风格（每模块独立选择）
+  showWifi: true, // 显示 WiFi 连接状态模块
+  showBt: true, // 显示蓝牙连接状态模块
   showDate: true, // 显示日期/星期
   infoSource: 'wifi', // 联网方式：wifi(无线) | usb(USB 共享网络/电脑 ICS)——都是联网后网络自动获取时间/天气/位置
   // 模块自由排版：每个模块相对默认位置的像素偏移 + 缩放
@@ -294,24 +298,67 @@ function applyDisplayConfig() {
   if (dEl) dEl.style.display = CONFIG.showDate ? '' : 'none'
   weatherDisplay.style.display = CONFIG.showWeather ? '' : 'none'
   chatBubble.style.display = CONFIG.showBubble ? '' : 'none'
+  if (wifiStatus) wifiStatus.style.display = CONFIG.showWifi === false ? 'none' : ''
+  if (btStatus) btStatus.style.display = CONFIG.showBt === false ? 'none' : ''
   // 空气泡时同步自定义占位文本
   if (chatBubble.classList.contains('empty')) {
     chatBubble.textContent = CONFIG.bubblePlaceholder || '等待 agent 消息…'
   }
   if (CONFIG.showTime) startClock()
   if (CONFIG.showWeather) startWeather()
+  startConnStatus() // 内部按各模块开关自行显示/隐藏
   // 各模块字体颜色
   const fc = CONFIG.fontColors || {}
   if (fc.time) timeDisplay.style.color = fc.time
   if (fc.date && dEl) dEl.style.color = fc.date
   if (fc.weather) weatherDisplay.style.color = fc.weather
   if (fc.bubble) chatBubble.style.color = fc.bubble
+  if (fc.wifi && wifiStatus) wifiStatus.style.color = fc.wifi
+  if (fc.bt && btStatus) btStatus.style.color = fc.bt
   applyLayout()
   applyBg()
   applyBubbleBg()
   applyFont()
   // 缩放/布局配置变化时重新适配模型（模型不变则不重载）
   if (sprite) fitSprite(sprite, realModelSize)
+}
+
+/* ---------------- 连接状态（WiFi / 蓝牙）：轮询板子后台 API ---------------- */
+let connTimer = null
+function startConnStatus() {
+  if (connTimer) return
+  const refresh = async () => {
+    try {
+      // WiFi 状态（/api/net/status → wifi.up / wifi.ssid）
+      const w = await fetchTimeout(`${API_BASE}/api/net/status`, 4000).catch(() => null)
+      if (wifiStatus) {
+        const wifiOn = !!(w && w.wifi && w.wifi.up)
+        wifiStatus.classList.toggle('off', !wifiOn)
+        const txt = wifiStatus.querySelector('.st-txt')
+        if (txt) {
+          if (wifiOn) {
+            const ssid = (w.wifi.ssid || '').trim()
+            txt.textContent = ssid ? `WiFi ${ssid}` : 'WiFi 已连接'
+          } else {
+            txt.textContent = 'WiFi 未连接'
+          }
+        }
+      }
+    } catch { /* 后台不可达：保持现状 */ }
+    try {
+      // 蓝牙状态
+      const b = await fetchTimeout(`${API_BASE}/api/bt/status`, 4000).catch(() => null)
+      if (btStatus) {
+        const list = (b && (b.connected || [])) || []
+        const on = list.length > 0
+        btStatus.classList.toggle('off', !on)
+        const txt = btStatus.querySelector('.st-txt')
+        if (txt) txt.textContent = on ? `蓝牙 ${list[0].name || list[0].mac || ''}` : '蓝牙 未连接'
+      }
+    } catch { /* ignore */ }
+  }
+  refresh()
+  connTimer = setInterval(refresh, 5000) // 5s 轮询一次（轻量）
 }
 
 // 屏幕背景主题（渐变预设；管理后台「显示设置」切换）
@@ -374,6 +421,8 @@ async function applyFont() {
   if (dateDisplay) dateDisplay.style.fontFamily = pick('date')
   if (weatherDisplay) weatherDisplay.style.fontFamily = pick('weather')
   if (chatBubble) chatBubble.style.fontFamily = pick('bubble')
+  if (wifiStatus) wifiStatus.style.fontFamily = pick('wifi')
+  if (btStatus) btStatus.style.fontFamily = pick('bt')
 }
 
 // 气泡背景：用户色 → 半透明磨砂渐变（与主体背景不冲突）
@@ -406,6 +455,8 @@ function applyLayout() {
   set('date-display', 'date')
   set('weather-display', 'weather')
   set('chat-bubble', 'bubble')
+  set('wifi-status', 'wifi')
+  set('bt-status', 'bt')
 }
 
 /* ---------------- 消息轮询（去 ws：GET /api/poll 拉取控制消息） ---------------- */
@@ -762,6 +813,8 @@ const PV_MODULES = [
   { id: 'date-display', key: 'date', name: '日期' },
   { id: 'weather-display', key: 'weather', name: '天气' },
   { id: 'chat-bubble', key: 'bubble', name: '气泡', wrapBox: true }, // wrapBox：框住气泡元素本身（含 padding/圆角）
+  { id: 'wifi-status', key: 'wifi', name: 'WiFi 状态', wrapBox: true }, // fit-content 元素：直接量自身（含图标）
+  { id: 'bt-status', key: 'bt', name: '蓝牙状态', wrapBox: true },
 ]
 
 function pvEmit() {

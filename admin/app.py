@@ -40,11 +40,13 @@ DEFAULT_CONFIG = {
     "bubbleHold": 0,  # 气泡滞留秒数（0 = 一直显示，直到下一条消息替换）
     "bubblePlaceholder": "等待 agent 消息…",
     "bubbleFontSize": 14,
-    "fontColors": {"time": "#ffffff", "date": "#9a9ab0", "weather": "#ffffff", "bubble": "#e8e8f2"},
+    "fontColors": {"time": "#ffffff", "date": "#9a9ab0", "weather": "#ffffff", "bubble": "#e8e8f2", "wifi": "#ffffff", "bt": "#ffffff"},  # 各模块字体颜色
     "bubbleBgColor": "#7c5cff",  # 气泡背景色（半透明磨砂渐变的基色）
     "bgTheme": "aurora",  # 屏幕背景主题：aurora(极光) | pink(粉嫩) | dark(深色) | mint(薄荷) | sunset(日落)
     "fontStyle": "default",  # 字体风格（兼容旧配置，已废弃——用 fontStyles 每模块）
-    "fontStyles": {"time": "default", "date": "default", "weather": "default", "bubble": "default"},  # 各模块字体风格：default/round/quicksand/nunito/baloo/fredoka/orbitron/serif
+    "fontStyles": {"time": "default", "date": "default", "weather": "default", "bubble": "default", "wifi": "default", "bt": "default"},  # 各模块字体风格：default/round/quicksand/nunito/baloo/fredoka/orbitron/serif/cnround
+    "showWifi": True,  # 显示 WiFi 连接状态模块
+    "showBt": True,  # 显示蓝牙连接状态模块
     "infoSource": "wifi",  # 兼容旧配置（单值）；新配置用 netSources 多选
     "netSources": ["wifi", "usb"],  # 联网方式多选（互不干扰可共存）：wifi(无线) | usb(USB 共享网络/电脑 ICS)
     "astrbotUrl": "",  # AstrBot 主机地址（板子壳连接用）：局域网如 http://192.168.5.6:6185，或 DDNS 域名
@@ -56,6 +58,8 @@ DEFAULT_CONFIG = {
         "weather": {"x": 0, "y": 0, "scale": 1},
         "bubble": {"x": 0, "y": 0, "scale": 1},
         "model": {"x": 0, "y": 0, "scale": 1},
+        "wifi": {"x": 0, "y": 0, "scale": 1},
+        "bt": {"x": 0, "y": 0, "scale": 1},
     },
 }
 
@@ -126,7 +130,7 @@ def api_config():
         return jsonify(load_config())
     cfg = load_config()
     data = request.get_json(silent=True) or {}
-    for k in ("showTime", "showDate", "showWeather", "showBubble", "city", "weatherUnit", "weatherProvider", "weatherKey", "model", "zoom", "layout", "bubbleScrollSpeed", "bubbleHold", "bubblePlaceholder", "infoSource", "netSources", "bubbleFontSize", "fontColors", "bubbleBgColor", "bgTheme", "fontStyles", "astrbotUrl", "astrbotKey", "astrbotSession"):
+    for k in ("showTime", "showDate", "showWeather", "showBubble", "showWifi", "showBt", "city", "weatherUnit", "weatherProvider", "weatherKey", "model", "zoom", "layout", "bubbleScrollSpeed", "bubbleHold", "bubblePlaceholder", "infoSource", "netSources", "bubbleFontSize", "fontColors", "bubbleBgColor", "bgTheme", "fontStyles", "astrbotUrl", "astrbotKey", "astrbotSession"):
         if k in data:
             cfg[k] = data[k]
     save_config(cfg)

@@ -101,6 +101,40 @@
         text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
         line-height: 1.5;
       }
+      /* 连接状态模块（WiFi / 蓝牙）：文字 + 自绘 SVG 小图标（currentColor 跟随文字色） */
+      .conn-status {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 14px;
+        color: var(--text);
+        text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
+        line-height: 1.5;
+        width: fit-content;
+      }
+      .conn-status .st-ico {
+        width: 1.15em;
+        height: 1.15em;
+        flex-shrink: 0;
+        color: inherit;
+      }
+      .conn-status .st-ico svg { display: block; width: 100%; height: 100%; }
+      .conn-status.off {
+        opacity: 0.55;
+        color: var(--text-dim);
+      }
+      .conn-status .st-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+        opacity: 0.9;
+        flex-shrink: 0;
+      }
+      #wifi-status .st-dot { background: #67e8a9; }  /* 已连接：柔和绿点 */
+      #wifi-status.off .st-dot { background: var(--text-dim); }
+      #bt-status .st-dot { background: #8fb7ff; }    /* 已连接：柔和蓝点 */
+      #bt-status.off .st-dot { background: var(--text-dim); }
       #chat-bubble {
         background: linear-gradient(135deg, rgba(124, 92, 255, 0.88) 0%, rgba(124, 92, 255, 0.55) 60%, rgba(124, 92, 255, 0.35) 100%);
         backdrop-filter: blur(8px);
@@ -247,6 +281,29 @@
       </div>
       <div id="date-display"></div>
       <div id="weather-display">--</div>
+      <!-- 连接状态模块：WiFi / 蓝牙（文字 + 自绘 SVG 图标） -->
+      <div id="wifi-status" class="conn-status off" style="display:none">
+        <span class="st-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round">
+            <path d="M2.5 9.5a15 15 0 0 1 19 0" />
+            <path d="M5.5 12.8a10.5 10.5 0 0 1 13 0" />
+            <path d="M8.6 16a5.8 5.8 0 0 1 6.8 0" />
+            <circle cx="12" cy="19.2" r="1.35" fill="currentColor" stroke="none" />
+          </svg>
+        </span>
+        <span class="st-txt">WiFi --</span>
+        <span class="st-dot"></span>
+      </div>
+      <div id="bt-status" class="conn-status off" style="display:none">
+        <span class="st-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 7.5 17 16.5 12 21V3l5 4.5L7 16.5" />
+            <path d="M12 3v18" />
+          </svg>
+        </span>
+        <span class="st-txt">蓝牙 --</span>
+        <span class="st-dot"></span>
+      </div>
       <div id="chat-bubble" class="empty">等待 agent 消息…</div>
     </div>
 

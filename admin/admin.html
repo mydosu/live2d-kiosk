@@ -271,6 +271,8 @@
         <div class="row"><span>显示日期/星期</span><label class="switch"><input type="checkbox" id="sw-date" /><span class="slider"></span></label></div>
         <div class="row"><span>显示天气</span><label class="switch"><input type="checkbox" id="sw-weather" /><span class="slider"></span></label></div>
         <div class="row"><span>显示对话气泡</span><label class="switch"><input type="checkbox" id="sw-bubble" /><span class="slider"></span></label></div>
+        <div class="row"><span>显示 WiFi 连接状态</span><label class="switch"><input type="checkbox" id="sw-wifi-status" /><span class="slider"></span></label></div>
+        <div class="row"><span>显示蓝牙连接状态</span><label class="switch"><input type="checkbox" id="sw-bt-status" /><span class="slider"></span></label></div>
         <div class="row"><span>气泡空闲时显示的文字</span><input type="text" id="inp-placeholder" placeholder="等待 agent 消息…" /></div>
         <div class="row"><span>气泡滚动速度 <b id="speed-val" style="color:var(--accent)">20px/s</b></span>
           <div class="axes"><span><input type="range" id="rng-speed" min="5" max="100" step="5" style="width:130px" /><input type="number" id="num-speed" min="5" max="100" step="5" /></span></div>
@@ -322,6 +324,8 @@
             <div style="display:flex;align-items:center;gap:8px"><b style="font-size:12px;color:var(--dim);width:34px">日期</b><select id="sel-font-date" style="flex:1;min-width:0"><option value="default">默认</option><option value="round">圆润 Comfortaa</option><option value="quicksand">柔和 Quicksand</option><option value="nunito">圆体 Nunito</option><option value="baloo">卡通 Baloo 2</option><option value="fredoka">果冻 Fredoka</option><option value="orbitron">科技 Orbitron</option><option value="serif">优雅 Playfair</option><option value="cnround">中文圆体（站酷快乐体）</option></select></div>
             <div style="display:flex;align-items:center;gap:8px"><b style="font-size:12px;color:var(--dim);width:34px">天气</b><select id="sel-font-weather" style="flex:1;min-width:0"><option value="default">默认</option><option value="round">圆润 Comfortaa</option><option value="quicksand">柔和 Quicksand</option><option value="nunito">圆体 Nunito</option><option value="baloo">卡通 Baloo 2</option><option value="fredoka">果冻 Fredoka</option><option value="orbitron">科技 Orbitron</option><option value="serif">优雅 Playfair</option><option value="cnround">中文圆体（站酷快乐体）</option></select></div>
             <div style="display:flex;align-items:center;gap:8px"><b style="font-size:12px;color:var(--dim);width:34px">气泡</b><select id="sel-font-bubble" style="flex:1;min-width:0"><option value="default">默认</option><option value="round">圆润 Comfortaa</option><option value="quicksand">柔和 Quicksand</option><option value="nunito">圆体 Nunito</option><option value="baloo">卡通 Baloo 2</option><option value="fredoka">果冻 Fredoka</option><option value="orbitron">科技 Orbitron</option><option value="serif">优雅 Playfair</option><option value="cnround">中文圆体（站酷快乐体）</option></select></div>
+            <div style="display:flex;align-items:center;gap:8px"><b style="font-size:12px;color:var(--dim);width:34px">WiFi</b><select id="sel-font-wifi" style="flex:1;min-width:0"><option value="default">默认</option><option value="round">圆润 Comfortaa</option><option value="quicksand">柔和 Quicksand</option><option value="nunito">圆体 Nunito</option><option value="baloo">卡通 Baloo 2</option><option value="fredoka">果冻 Fredoka</option><option value="orbitron">科技 Orbitron</option><option value="serif">优雅 Playfair</option><option value="cnround">中文圆体（站酷快乐体）</option></select></div>
+            <div style="display:flex;align-items:center;gap:8px"><b style="font-size:12px;color:var(--dim);width:34px">蓝牙</b><select id="sel-font-bt" style="flex:1;min-width:0"><option value="default">默认</option><option value="round">圆润 Comfortaa</option><option value="quicksand">柔和 Quicksand</option><option value="nunito">圆体 Nunito</option><option value="baloo">卡通 Baloo 2</option><option value="fredoka">果冻 Fredoka</option><option value="orbitron">科技 Orbitron</option><option value="serif">优雅 Playfair</option><option value="cnround">中文圆体（站酷快乐体）</option></select></div>
           </div>
         </div>
         <div class="sub" style="margin:0">每个模块独立选择艺术字（英文/数字用艺术字，中文自动回落到系统字体）</div>
@@ -330,6 +334,8 @@
           <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)">日期<input type="color" id="col-date" value="#9a9ab0" style="width:34px;height:26px;border:none;padding:0;background:none;cursor:pointer" /></label>
           <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)">天气<input type="color" id="col-weather" value="#ffffff" style="width:34px;height:26px;border:none;padding:0;background:none;cursor:pointer" /></label>
           <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)">气泡<input type="color" id="col-bubble" value="#e8e8f2" style="width:34px;height:26px;border:none;padding:0;background:none;cursor:pointer" /></label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)">WiFi<input type="color" id="col-wifi" value="#ffffff" style="width:34px;height:26px;border:none;padding:0;background:none;cursor:pointer" /></label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)">蓝牙<input type="color" id="col-bt" value="#ffffff" style="width:34px;height:26px;border:none;padding:0;background:none;cursor:pointer" /></label>
         </div>
         <div class="sub" style="margin:0">提示：消息较长时气泡会自动循环滚动展示</div>
         <div class="row"><span>气泡背景色</span>
@@ -369,6 +375,8 @@
             <div class="layout-row"><span class="lname">天气</span><div class="axes"><span><label>X</label><input type="range" id="lay-weather-x" min="-320" max="320" step="5" /><input type="number" id="lay-weather-xn" min="-320" max="320" step="5" /><b id="lay-weather-xv">0</b></span><span><label>Y</label><input type="range" id="lay-weather-y" min="-240" max="240" step="5" /><input type="number" id="lay-weather-yn" min="-240" max="240" step="5" /><b id="lay-weather-yv">0</b></span><span><label>S</label><input type="range" id="lay-weather-s" min="0.3" max="3" step="0.05" /><input type="number" id="lay-weather-sn" min="0.3" max="3" step="0.05" /><b id="lay-weather-sv">1.00</b></span></div></div>
             <div class="layout-row"><span class="lname">气泡</span><div class="axes"><span><label>X</label><input type="range" id="lay-bubble-x" min="-320" max="320" step="5" /><input type="number" id="lay-bubble-xn" min="-320" max="320" step="5" /><b id="lay-bubble-xv">0</b></span><span><label>Y</label><input type="range" id="lay-bubble-y" min="-240" max="240" step="5" /><input type="number" id="lay-bubble-yn" min="-240" max="240" step="5" /><b id="lay-bubble-yv">0</b></span><span><label>S</label><input type="range" id="lay-bubble-s" min="0.3" max="3" step="0.05" /><input type="number" id="lay-bubble-sn" min="0.3" max="3" step="0.05" /><b id="lay-bubble-sv">1.00</b></span></div></div>
             <div class="layout-row"><span class="lname">模型</span><div class="axes"><span><label>X</label><input type="range" id="lay-model-x" min="-320" max="320" step="5" /><input type="number" id="lay-model-xn" min="-320" max="320" step="5" /><b id="lay-model-xv">0</b></span><span><label>Y</label><input type="range" id="lay-model-y" min="-240" max="240" step="5" /><input type="number" id="lay-model-yn" min="-240" max="240" step="5" /><b id="lay-model-yv">0</b></span><span><label>S</label><input type="range" id="lay-model-s" min="0.3" max="3" step="0.05" /><input type="number" id="lay-model-sn" min="0.3" max="3" step="0.05" /><b id="lay-model-sv">1.00</b></span></div></div>
+            <div class="layout-row"><span class="lname">WiFi 状态</span><div class="axes"><span><label>X</label><input type="range" id="lay-wifi-x" min="-320" max="320" step="5" /><input type="number" id="lay-wifi-xn" min="-320" max="320" step="5" /><b id="lay-wifi-xv">0</b></span><span><label>Y</label><input type="range" id="lay-wifi-y" min="-240" max="240" step="5" /><input type="number" id="lay-wifi-yn" min="-240" max="240" step="5" /><b id="lay-wifi-yv">0</b></span><span><label>S</label><input type="range" id="lay-wifi-s" min="0.3" max="3" step="0.05" /><input type="number" id="lay-wifi-sn" min="0.3" max="3" step="0.05" /><b id="lay-wifi-sv">1.00</b></span></div></div>
+            <div class="layout-row"><span class="lname">蓝牙状态</span><div class="axes"><span><label>X</label><input type="range" id="lay-bt-x" min="-320" max="320" step="5" /><input type="number" id="lay-bt-xn" min="-320" max="320" step="5" /><b id="lay-bt-xv">0</b></span><span><label>Y</label><input type="range" id="lay-bt-y" min="-240" max="240" step="5" /><input type="number" id="lay-bt-yn" min="-240" max="240" step="5" /><b id="lay-bt-yv">0</b></span><span><label>S</label><input type="range" id="lay-bt-s" min="0.3" max="3" step="0.05" /><input type="number" id="lay-bt-sn" min="0.3" max="3" step="0.05" /><b id="lay-bt-sv">1.00</b></span></div></div>
             <div class="sub" style="margin:8px 0 0">调整 S 滑条可以改变角色的大小；保存后屏幕立即生效</div>
           </div>
         </div>
@@ -482,7 +490,7 @@ async function saveCard(card, fields) {
   if (card === 'layout') syncLayoutPreview();
 }
 const SAVE_FIELDS = {
-  display: ['showTime','showDate','showWeather','showBubble','bubblePlaceholder','bubbleScrollSpeed','bubbleHold','bubbleFontSize','fontColors','bubbleBgColor','bgTheme','fontStyles','city','weatherUnit','weatherProvider','weatherKey'],
+  display: ['showTime','showDate','showWeather','showBubble','showWifi','showBt','bubblePlaceholder','bubbleScrollSpeed','bubbleHold','bubbleFontSize','fontColors','bubbleBgColor','bgTheme','fontStyles','city','weatherUnit','weatherProvider','weatherKey'],
   layout: ['layout'],
   agent: ['astrbotUrl','astrbotKey','astrbotSession'],
 };
@@ -522,7 +530,7 @@ function resetField(field, card) {
     case 'weatherUnit': $('sel-unit').value = dv; break;
     case 'weatherProvider': $('sel-weather-provider').value = dv; break;
     case 'weatherKey': $('inp-weather-key').value = dv; break;
-    case 'fontColors': $('col-time').value = dv.time; $('col-date').value = dv.date; $('col-weather').value = dv.weather; $('col-bubble').value = dv.bubble; break;
+    case 'fontColors': $('col-time').value = dv.time; $('col-date').value = dv.date; $('col-weather').value = dv.weather; $('col-bubble').value = dv.bubble; $('col-wifi').value = dv.wifi; $('col-bt').value = dv.bt; break;
     case 'astrbotUrl': $('inp-astrbot-url').value = dv; break;
     case 'astrbotKey': $('inp-astrbot-key').value = dv; break;
     case 'astrbotSession': $('sel-session').value = dv; refreshSessions(true); break;
@@ -572,11 +580,11 @@ function attachAllResets() {
   attachReset($('sel-unit'), 'weatherUnit', 'display');
   attachReset($('sel-weather-provider'), 'weatherProvider', 'display');
   attachReset($('inp-weather-key'), 'weatherKey', 'display');
-  attachReset($('col-time'), 'fontColors', 'display');
+  ['time','date','weather','bubble','wifi','bt'].forEach(k => attachReset($('col-' + k), 'fontColors', 'display'));
   attachReset($('inp-astrbot-url'), 'astrbotUrl', 'agent');
   attachReset($('inp-astrbot-key'), 'astrbotKey', 'agent');
   attachReset($('sel-session'), 'astrbotSession', 'agent');
-  ['time','date','weather','bubble','model'].forEach(attachLayoutReset);
+  ['time','date','weather','bubble','model','wifi','bt'].forEach(attachLayoutReset);
 }
 
 // ================= 清空屏幕消息 =================
@@ -602,6 +610,8 @@ function render() {
     $('sw-date').checked = !!config.showDate;
     $('sw-weather').checked = !!config.showWeather;
     $('sw-bubble').checked = !!config.showBubble;
+    $('sw-wifi-status').checked = config.showWifi !== false;
+    $('sw-bt-status').checked = config.showBt !== false;
     $('inp-city').value = config.city || '';
       $('sel-unit').value = config.weatherUnit || 'c';
       $('sel-weather-provider').value = config.weatherProvider || 'amap';
@@ -623,9 +633,11 @@ function render() {
   $('col-date').value = fc.date || '#9a9ab0';
   $('col-weather').value = fc.weather || '#ffffff';
   $('col-bubble').value = fc.bubble || '#e8e8f2';
+  $('col-wifi').value = fc.wifi || '#ffffff';
+  $('col-bt').value = fc.bt || '#ffffff';
   $('col-bubble-bg').value = config.bubbleBgColor || '#7c5cff';
   const fs = config.fontStyles || {};
-  ['time','date','weather','bubble'].forEach(k => { $('sel-font-' + k).value = fs[k] || 'default'; });
+  ['time','date','weather','bubble','wifi','bt'].forEach(k => { $('sel-font-' + k).value = fs[k] || 'default'; });
   // 背景主题选中态
   document.querySelectorAll('.bg-chip').forEach(b => b.classList.toggle('active', b.dataset.theme === (config.bgTheme || 'aurora')));
   renderBgImage();
@@ -669,7 +681,7 @@ async function selectModel(name) {
 
 // ---------- 显示设置控件（草稿） ----------
 // 开关：id → 配置字段 映射（替代嵌套三元）
-const SWITCH_FIELDS = { 'sw-time': 'showTime', 'sw-date': 'showDate', 'sw-weather': 'showWeather', 'sw-bubble': 'showBubble' };
+const SWITCH_FIELDS = { 'sw-time': 'showTime', 'sw-date': 'showDate', 'sw-weather': 'showWeather', 'sw-bubble': 'showBubble', 'sw-wifi-status': 'showWifi', 'sw-bt-status': 'showBt' };
 Object.entries(SWITCH_FIELDS).forEach(([id, field]) => {
   $(id).addEventListener('change', (e) => draftField(field, e.target.checked));
 });
@@ -694,7 +706,7 @@ bindPair('rng-hold', 'num-hold', (v) => { $('hold-val').textContent = v > 0 ? v 
 // 气泡字体大小（滑条+数值联动）
 bindPair('rng-fontsize', 'num-fontsize', (v) => { $('fontsize-val').textContent = v + 'px'; draftField('bubbleFontSize', v); });
 // 字体颜色
-['time','date','weather','bubble'].forEach((k) => {
+['time','date','weather','bubble','wifi','bt'].forEach((k) => {
   $('col-' + k).addEventListener('input', (e) => {
     draft.fontColors = { ...(draft.fontColors || config.fontColors || {}), [k]: e.target.value };
     markDirty('display');
@@ -703,7 +715,7 @@ bindPair('rng-fontsize', 'num-fontsize', (v) => { $('fontsize-val').textContent 
 // 气泡背景色
 $('col-bubble-bg').addEventListener('input', (e) => draftField('bubbleBgColor', e.target.value));
 // 字体风格（每模块）
-['time','date','weather','bubble'].forEach(k => {
+['time','date','weather','bubble','wifi','bt'].forEach(k => {
   $('sel-font-' + k).addEventListener('change', (e) => {
     draft.fontStyles = { ...(draft.fontStyles || config.fontStyles || {}), [k]: e.target.value };
     markDirty('display');
@@ -1087,7 +1099,7 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) refr
 // ---------- 布局滑条（滑条+数值输入联动，草稿模式） ----------
 function collectLayout() {
   const lay = {};
-  ['time','date','weather','bubble','model'].forEach(mm => {
+  ['time','date','weather','bubble','model','wifi','bt'].forEach(mm => {
     const o = { x: parseInt($('lay-' + mm + '-x').value, 10), y: parseInt($('lay-' + mm + '-y').value, 10) };
     if ($('lay-' + mm + '-s')) o.scale = parseFloat($('lay-' + mm + '-s').value);
     lay[mm] = o;
@@ -1095,7 +1107,7 @@ function collectLayout() {
   return lay;
 }
 function bindLayout() {
-  ['time','date','weather','bubble','model'].forEach(m => {
+  ['time','date','weather','bubble','model','wifi','bt'].forEach(m => {
     ['x','y'].forEach(axis => {
       const sl = $('lay-' + m + '-' + axis);
       const num = $('lay-' + m + '-' + axis + 'n');
