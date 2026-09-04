@@ -95,6 +95,9 @@ let CONFIG = {
 
 // kiosk 模式：?kiosk=1 时精简显示（仅展示，无需鼠标操作）
 const IS_KIOSK = new URLSearchParams(location.search).has('kiosk')
+// 预览模式：?preview=1 时嵌入后台排版页 iframe——跳过 Live2D 初始化（板子 2GB 跑不动双实例），
+// 模块显示可拖拽/缩放控制框，布局变化实时 postMessage 给父窗口（后台滑条同步）
+const IS_PREVIEW = new URLSearchParams(location.search).has('preview')
 
 /* ---------------- 左侧面板：时间 / 天气 / 气泡 ---------------- */
 const WEEK = ['日', '一', '二', '三', '四', '五', '六']
@@ -400,7 +403,8 @@ function applyLayout() {
     if (!el) return
     const v = L[k] || { x: 0, y: 0, scale: 1 }
     const sx = Number(v.scale) || 1
-    el.style.transform = `translate(${Number(v.x) || 0}px, ${Number(v.y) || 0}px) scale(${sx})`
+    const target = el.querySelector?.('.pv-wrap') || el // 预览模式：transform 套在包裹层上
+    target.style.transform = `translate(${Number(v.x) || 0}px, ${Number(v.y) || 0}px) scale(${sx})`
     if (id === 'chat-bubble') el.style.setProperty('--bubble-scale', sx) // 气泡宽度/高度随缩放反比（不覆盖模型/面板）
   }
   set('time-block', 'time')
@@ -928,8 +932,144 @@ if (IS_KIOSK) {
   topbar.classList.add('hide-hud')
 }
 initPoll() // 轮询管理后台消息（agent 控制）
-fetchConfig() // 读取显示开关/城市/模型
-  .then(fetchModels)
-  .then(() => initApp())
-  .then(() => loadModelByName(CONFIG.model))
-  .catch((err) => console.error('[bootstrap failed]', err))
+if (IS_PREVIEW) {
+  // 预览模式：跳过 Live2D（双实例会 OOM），显示模型占位框 + 启用拖拽/缩放控制
+  fetchConfig()
+    .then(fetchModels)
+    .then(() => { initPreview(); })
+    .catch((err) => console.error('[preview bootstrap failed]', err))
+} else {
+  fetchConfig() // 读取显示开关/城市/模型
+    .then(fetchModels)
+    .then(() => initApp())
+    .then(() => loadModelByName(CONFIG.model))
+    .catch((err) => console.error('[bootstrap failed]', err))
+}
+
+/* ================= 预览模式：拖拽 / 缩放 / 与后台同步（?preview=1） ================= */
+// 每个模块包一层 .pv-wrap（放 transform + 标签 + 缩放手柄），避免覆盖模块自身样式
+const PV_MODULES = [
+  { id: 'time-block', key: 'time', name: '时间' },
+  { id: 'date-display', key: 'date', name: '日期' },
+  { id: 'weather-display', key: 'weather', name: '天气' },
+  { id: 'chat-bubble', key: 'bubble', name: '气泡' },
+  { id: 'model-placeholder', key: 'model', name: '模型' },
+]
+
+function pvEmit() {
+  // 把当前全部 layout 通知父窗口（后台滑条/草稿同步）
+  try { window.parent?.postMessage({ type: 'preview-layout', layout: CONFIG.layout }, '*') } catch { /* ignore */ }
+}
+
+function pvApply(key) {
+  applyLayout() // 文字模块（含包裹层 transform）
+  if (key === 'model') applyModelPlaceholder()
+}
+
+function applyModelPlaceholder() {
+  const mp = $('model-placeholder')
+  if (!mp) return
+  const v = CONFIG.layout?.model || { x: 0, y: 0, scale: 1 }
+  const sx = Number(v.scale) || 1
+  mp.style.transform = `translate(calc(-50% + ${Number(v.x) || 0}px), calc(-50% + ${Number(v.y) || 0}px)) scale(${sx})`
+}
+
+function initPreview() {
+  document.body.classList.add('preview-mode')
+  // 隐藏 HUD（控制条/顶栏/加载遮罩），只留屏幕内容 + 占位框
+  controls.classList.add('hide-hud')
+  topbar.classList.add('hide-hud')
+  if (loader) loader.classList.add('hidden')
+  // 时间/日期/天气/气泡真实显示，方便预览效果
+  if (CONFIG.showTime) startClock()
+  if (CONFIG.showWeather) startWeather()
+  if (chatBubble.classList.contains('empty')) {
+    chatBubble.textContent = CONFIG.bubblePlaceholder || '等待 agent 消息…'
+  }
+  // 模型占位框初始位置（右半区域中心）
+  applyModelPlaceholder()
+
+  // 为每个模块包裹 .pv-wrap + 标签 + 缩放手柄
+  for (const m of PV_MODULES) {
+    const el = $(m.id)
+    if (!el) continue
+    if (el.querySelector('.pv-wrap')) continue
+    const wrap = document.createElement('div')
+    wrap.className = 'pv-wrap'
+    el.parentNode.insertBefore(wrap, el)
+    wrap.appendChild(el)
+    // 名称标签
+    const label = document.createElement('div')
+    label.className = 'pv-label'
+    label.textContent = m.name
+    wrap.appendChild(label)
+    // 缩放手柄
+    const handle = document.createElement('div')
+    handle.className = 'pv-handle'
+    wrap.appendChild(handle)
+    // 拖动（wrap 上按下移动 → 更新 x/y）
+    let dragStart = null
+    wrap.addEventListener('pointerdown', (e) => {
+      if (e.target.classList.contains('pv-handle')) return
+      e.preventDefault()
+      wrap.setPointerCapture(e.pointerId)
+      const v = CONFIG.layout?.[m.key] || { x: 0, y: 0, scale: 1 }
+      dragStart = { px: e.clientX, py: e.clientY, ox: Number(v.x) || 0, oy: Number(v.y) || 0 }
+      const move = (ev) => {
+        if (!dragStart) return
+        CONFIG.layout[m.key] = {
+          ...(CONFIG.layout[m.key] || {}),
+          x: Math.round((dragStart.ox + (ev.clientX - dragStart.px)) / 5) * 5,
+          y: Math.round((dragStart.oy + (ev.clientY - dragStart.py)) / 5) * 5,
+        }
+        pvApply(m.key)
+        pvEmit()
+      }
+      const up = () => {
+        dragStart = null
+        wrap.removeEventListener('pointermove', move)
+        wrap.removeEventListener('pointerup', up)
+      }
+      wrap.addEventListener('pointermove', move)
+      wrap.addEventListener('pointerup', up)
+    })
+    // 缩放（手柄拖动 → 更新 scale，步进 0.05）
+    handle.addEventListener('pointerdown', (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      handle.setPointerCapture(e.pointerId)
+      const v = CONFIG.layout?.[m.key] || { x: 0, y: 0, scale: 1 }
+      const s0 = Number(v.scale) || 1
+      const start = { px: e.clientX, s0 }
+      const move = (ev) => {
+        const ds = (ev.clientX - start.px) / 120 // 每 120px 变化 1.0
+        let ns = Math.round((start.s0 + ds) * 20) / 20
+        ns = Math.min(3, Math.max(0.3, ns))
+        CONFIG.layout[m.key] = { ...(CONFIG.layout[m.key] || {}), scale: ns }
+        pvApply(m.key)
+        pvEmit()
+      }
+      const up = () => {
+        handle.removeEventListener('pointermove', move)
+        handle.removeEventListener('pointerup', up)
+      }
+      handle.addEventListener('pointermove', move)
+      handle.addEventListener('pointerup', up)
+    })
+  }
+
+  // 接收父窗口（后台）的布局同步消息：滑条改动实时反映到预览
+  window.addEventListener('message', (e) => {
+    const d = e.data
+    if (!d || typeof d !== 'object') return
+    if (d.type === 'preview-sync' && d.layout) {
+      CONFIG.layout = { ...(CONFIG.layout || {}), ...d.layout }
+      applyLayout()
+      applyModelPlaceholder()
+    }
+  })
+
+  // 通知父窗口：预览已就绪（可回发当前布局）
+  pvEmit()
+  // 预览模式下也继续轮询（后台保存后自动刷新）——initPoll 已在启动时调用
+}

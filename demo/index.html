@@ -136,6 +136,53 @@
         color: var(--text-dim);
       }
 
+      /* ---------- 预览模式（后台排版页 iframe：?preview=1） ---------- */
+      .pv-only { display: none; }
+      body.preview-mode .pv-only { display: block; }
+      #model-placeholder {
+        position: fixed; left: 50%; top: 0; z-index: 2;
+        width: 42%; height: 72%;
+        border: 2px dashed rgba(255, 255, 255, 0.45);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.07);
+        display: flex; align-items: center; justify-content: center;
+        color: rgba(255, 255, 255, 0.55); font-size: 14px; letter-spacing: 2px;
+        transform-origin: center;
+      }
+      body.preview-mode #side-panel { pointer-events: auto; }
+      body.preview-mode .pv-label {
+        position: absolute; top: -22px; left: -2px; z-index: 70;
+        font-size: 11px; padding: 2px 8px; border-radius: 7px;
+        background: linear-gradient(135deg, #ff6f9f, #ff9fc4); color: #fff;
+        font-weight: 600; letter-spacing: 1px; white-space: nowrap;
+        box-shadow: 0 2px 8px rgba(255, 111, 159, 0.5);
+        pointer-events: none;
+      }
+      body.preview-mode .pv-handle {
+        position: absolute; right: -7px; bottom: -7px; z-index: 70;
+        width: 18px; height: 18px; border-radius: 6px;
+        background: linear-gradient(135deg, #ff6f9f, #ff9fc4);
+        cursor: nwse-resize;
+        box-shadow: 0 2px 6px rgba(255, 111, 159, 0.55);
+        touch-action: none;
+      }
+      body.preview-mode .pv-handle::after {
+        content: ''; position: absolute; right: 4px; bottom: 4px;
+        width: 7px; height: 7px;
+        border-right: 2px solid #fff; border-bottom: 2px solid #fff;
+      }
+      body.preview-mode #time-block, body.preview-mode #date-display,
+      body.preview-mode #weather-display, body.preview-mode #chat-bubble,
+      body.preview-mode #model-placeholder {
+        cursor: move; touch-action: none; user-select: none;
+      }
+      body.preview-mode #time-block, body.preview-mode #date-display,
+      body.preview-mode #weather-display, body.preview-mode #chat-bubble {
+        outline: 1.5px dashed rgba(255, 111, 159, 0.55);
+        outline-offset: 3px;
+        border-radius: 8px;
+      }
+
       /* ---------- 加载遮罩 ---------- */
       #loader {
         position: fixed;
@@ -481,6 +528,8 @@
   <body>
     <div id="bg"></div>
     <canvas id="live2d"></canvas>
+    <!-- 预览模式模型占位框（?preview=1 时显示；正常模式隐藏） -->
+    <div id="model-placeholder" class="pv-only">模型区域</div>
 
     <!-- 左侧面板：时间 / 天气 / 对话气泡（从上到下） -->
     <div id="side-panel">

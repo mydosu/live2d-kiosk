@@ -118,6 +118,15 @@
   .rst:hover { background:rgba(255,111,159,.12); color:var(--accent); }
   .hidden { display:none; }
   .bottom-btns { display:flex; flex-direction:column; gap:10px; margin-top:16px; }
+  /* ---------- 界面排版：屏幕实时预览 ---------- */
+  .layout-preview-wrap { display:flex; gap:18px; align-items:flex-start; flex-wrap:wrap; margin-bottom:6px; }
+  .layout-preview { position:relative; flex-shrink:0; width:320px; max-width:100%; aspect-ratio:4/3; border-radius:14px; overflow:hidden; box-shadow:0 6px 24px rgba(90,40,90,.18); border:1px solid rgba(255,255,255,.7); background:#0d0d18; }
+  .layout-preview iframe { position:absolute; top:0; left:0; width:800px; height:600px; border:none; transform:scale(var(--pv-scale,0.4)); transform-origin:top left; }
+  .layout-preview .pv-hint { position:absolute; left:10px; bottom:8px; z-index:5; font-size:11px; color:rgba(255,255,255,.75); background:rgba(0,0,0,.35); padding:2px 10px; border-radius:999px; pointer-events:none; backdrop-filter:blur(4px); }
+  .layout-preview .pv-loading { position:absolute; inset:0; z-index:4; display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,.6); font-size:13px; background:rgba(13,13,24,.6); }
+  .layout-preview.loaded .pv-loading { display:none; }
+  .layout-preview .pv-corner { position:absolute; right:0; bottom:0; z-index:5; width:22px; height:22px; cursor:nwse-resize; }
+  .layout-preview .pv-corner::before { content:''; position:absolute; right:4px; bottom:4px; width:8px; height:8px; border-right:2px solid rgba(255,111,159,.9); border-bottom:2px solid rgba(255,111,159,.9); }
   @media (max-width:720px) { .layout-row { grid-template-columns:1fr; } .axes { grid-template-columns:1fr; } }
 
   /* ================= 精修层（设计 tokens + 状态细节） ================= */
@@ -341,13 +350,23 @@
     <div class="page" id="page-layout">
       <div class="card">
         <h2>界面排版（位置与大小）</h2>
-        <div class="sub" style="margin:0 0 8px">拖动滑条或直接输入数值，自由调整各模块的位置与大小</div>
-        <div class="layout-row"><span class="lname">时间</span><div class="axes"><span><label>X</label><input type="range" id="lay-time-x" min="-320" max="320" step="5" /><input type="number" id="lay-time-xn" min="-320" max="320" step="5" /><b id="lay-time-xv">0</b></span><span><label>Y</label><input type="range" id="lay-time-y" min="-240" max="240" step="5" /><input type="number" id="lay-time-yn" min="-240" max="240" step="5" /><b id="lay-time-yv">0</b></span><span><label>S</label><input type="range" id="lay-time-s" min="0.5" max="3" step="0.05" /><input type="number" id="lay-time-sn" min="0.5" max="3" step="0.05" /><b id="lay-time-sv">1</b></span></div></div>
-        <div class="layout-row"><span class="lname">日期</span><div class="axes"><span><label>X</label><input type="range" id="lay-date-x" min="-320" max="320" step="5" /><input type="number" id="lay-date-xn" min="-320" max="320" step="5" /><b id="lay-date-xv">0</b></span><span><label>Y</label><input type="range" id="lay-date-y" min="-240" max="240" step="5" /><input type="number" id="lay-date-yn" min="-240" max="240" step="5" /><b id="lay-date-yv">0</b></span><span><label>S</label><input type="range" id="lay-date-s" min="0.5" max="3" step="0.05" /><input type="number" id="lay-date-sn" min="0.5" max="3" step="0.05" /><b id="lay-date-sv">1</b></span></div></div>
-        <div class="layout-row"><span class="lname">天气</span><div class="axes"><span><label>X</label><input type="range" id="lay-weather-x" min="-320" max="320" step="5" /><input type="number" id="lay-weather-xn" min="-320" max="320" step="5" /><b id="lay-weather-xv">0</b></span><span><label>Y</label><input type="range" id="lay-weather-y" min="-240" max="240" step="5" /><input type="number" id="lay-weather-yn" min="-240" max="240" step="5" /><b id="lay-weather-yv">0</b></span><span><label>S</label><input type="range" id="lay-weather-s" min="0.5" max="3" step="0.05" /><input type="number" id="lay-weather-sn" min="0.5" max="3" step="0.05" /><b id="lay-weather-sv">1</b></span></div></div>
-        <div class="layout-row"><span class="lname">气泡</span><div class="axes"><span><label>X</label><input type="range" id="lay-bubble-x" min="-320" max="320" step="5" /><input type="number" id="lay-bubble-xn" min="-320" max="320" step="5" /><b id="lay-bubble-xv">0</b></span><span><label>Y</label><input type="range" id="lay-bubble-y" min="-240" max="240" step="5" /><input type="number" id="lay-bubble-yn" min="-240" max="240" step="5" /><b id="lay-bubble-yv">0</b></span><span><label>S</label><input type="range" id="lay-bubble-s" min="0.5" max="3" step="0.05" /><input type="number" id="lay-bubble-sn" min="0.5" max="3" step="0.05" /><b id="lay-bubble-sv">1</b></span></div></div>
-        <div class="layout-row"><span class="lname">模型</span><div class="axes"><span><label>X</label><input type="range" id="lay-model-x" min="-320" max="320" step="5" /><input type="number" id="lay-model-xn" min="-320" max="320" step="5" /><b id="lay-model-xv">0</b></span><span><label>Y</label><input type="range" id="lay-model-y" min="-240" max="240" step="5" /><input type="number" id="lay-model-yn" min="-240" max="240" step="5" /><b id="lay-model-yv">0</b></span><span><label>S</label><input type="range" id="lay-model-s" min="0.5" max="3" step="0.05" /><input type="number" id="lay-model-sn" min="0.5" max="3" step="0.05" /><b id="lay-model-sv">1</b></span></div></div>
-        <div class="sub" style="margin:8px 0 0">调整 S 滑条可以改变角色的大小</div>
+        <div class="sub" style="margin:0 0 10px">左侧为屏幕实时预览：直接<b>拖动</b>模块调整位置、拖模块右下角<b>手柄</b>调整大小；右侧滑条可精确微调</div>
+        <div class="layout-preview-wrap">
+          <div class="layout-preview" id="layout-preview">
+            <div class="pv-loading">预览加载中…</div>
+            <iframe id="layout-preview-frame" title="屏幕实时预览" scrolling="no"></iframe>
+            <div class="pv-hint">拖动模块 · 拖右下角缩放</div>
+            <div class="pv-corner"></div>
+          </div>
+          <div style="flex:1;min-width:280px">
+            <div class="layout-row"><span class="lname">时间</span><div class="axes"><span><label>X</label><input type="range" id="lay-time-x" min="-320" max="320" step="5" /><input type="number" id="lay-time-xn" min="-320" max="320" step="5" /><b id="lay-time-xv">0</b></span><span><label>Y</label><input type="range" id="lay-time-y" min="-240" max="240" step="5" /><input type="number" id="lay-time-yn" min="-240" max="240" step="5" /><b id="lay-time-yv">0</b></span><span><label>S</label><input type="range" id="lay-time-s" min="0.3" max="3" step="0.05" /><input type="number" id="lay-time-sn" min="0.3" max="3" step="0.05" /><b id="lay-time-sv">1.00</b></span></div></div>
+            <div class="layout-row"><span class="lname">日期</span><div class="axes"><span><label>X</label><input type="range" id="lay-date-x" min="-320" max="320" step="5" /><input type="number" id="lay-date-xn" min="-320" max="320" step="5" /><b id="lay-date-xv">0</b></span><span><label>Y</label><input type="range" id="lay-date-y" min="-240" max="240" step="5" /><input type="number" id="lay-date-yn" min="-240" max="240" step="5" /><b id="lay-date-yv">0</b></span><span><label>S</label><input type="range" id="lay-date-s" min="0.3" max="3" step="0.05" /><input type="number" id="lay-date-sn" min="0.3" max="3" step="0.05" /><b id="lay-date-sv">1.00</b></span></div></div>
+            <div class="layout-row"><span class="lname">天气</span><div class="axes"><span><label>X</label><input type="range" id="lay-weather-x" min="-320" max="320" step="5" /><input type="number" id="lay-weather-xn" min="-320" max="320" step="5" /><b id="lay-weather-xv">0</b></span><span><label>Y</label><input type="range" id="lay-weather-y" min="-240" max="240" step="5" /><input type="number" id="lay-weather-yn" min="-240" max="240" step="5" /><b id="lay-weather-yv">0</b></span><span><label>S</label><input type="range" id="lay-weather-s" min="0.3" max="3" step="0.05" /><input type="number" id="lay-weather-sn" min="0.3" max="3" step="0.05" /><b id="lay-weather-sv">1.00</b></span></div></div>
+            <div class="layout-row"><span class="lname">气泡</span><div class="axes"><span><label>X</label><input type="range" id="lay-bubble-x" min="-320" max="320" step="5" /><input type="number" id="lay-bubble-xn" min="-320" max="320" step="5" /><b id="lay-bubble-xv">0</b></span><span><label>Y</label><input type="range" id="lay-bubble-y" min="-240" max="240" step="5" /><input type="number" id="lay-bubble-yn" min="-240" max="240" step="5" /><b id="lay-bubble-yv">0</b></span><span><label>S</label><input type="range" id="lay-bubble-s" min="0.3" max="3" step="0.05" /><input type="number" id="lay-bubble-sn" min="0.3" max="3" step="0.05" /><b id="lay-bubble-sv">1.00</b></span></div></div>
+            <div class="layout-row"><span class="lname">模型</span><div class="axes"><span><label>X</label><input type="range" id="lay-model-x" min="-320" max="320" step="5" /><input type="number" id="lay-model-xn" min="-320" max="320" step="5" /><b id="lay-model-xv">0</b></span><span><label>Y</label><input type="range" id="lay-model-y" min="-240" max="240" step="5" /><input type="number" id="lay-model-yn" min="-240" max="240" step="5" /><b id="lay-model-yv">0</b></span><span><label>S</label><input type="range" id="lay-model-s" min="0.3" max="3" step="0.05" /><input type="number" id="lay-model-sn" min="0.3" max="3" step="0.05" /><b id="lay-model-sv">1.00</b></span></div></div>
+            <div class="sub" style="margin:8px 0 0">调整 S 滑条可以改变角色的大小；保存后屏幕立即生效</div>
+          </div>
+        </div>
         <button class="btn btn-primary btn-save" data-card="layout" style="margin-top:12px">保存设置</button>
       </div>
     </div>
@@ -1035,6 +1054,7 @@ function bindLayout() {
         $('lay-' + m + '-' + axis + 'v').textContent = v;
         draft.layout = collectLayout();
         markDirty('layout');
+        syncLayoutPreview(); // 滑条改动 → 实时反映到预览
       };
       sl.addEventListener('input', () => { num.value = sl.value; upd(sl.value); });
       num.addEventListener('change', () => {
@@ -1051,6 +1071,7 @@ function bindLayout() {
         $('lay-' + m + '-sv').textContent = parseFloat(v).toFixed(2);
         draft.layout = collectLayout();
         markDirty('layout');
+        syncLayoutPreview();
       };
       sl.addEventListener('input', () => { num.value = sl.value; upd(sl.value); });
       num.addEventListener('change', () => {
@@ -1063,6 +1084,54 @@ function bindLayout() {
   });
 }
 bindLayout();
+
+// ---------- 屏幕实时预览（iframe 嵌入 demo?preview=1，双向同步） ----------
+const pvFrame = $('layout-preview-frame');
+const pvBox = $('layout-preview');
+let pvSyncing = false; // 防止"预览→滑条→预览"同步循环
+function pvScaleFit() {
+  // 预览容器宽度自适应缩放（800 基准 → 容器宽）
+  if (!pvBox) return;
+  const w = pvBox.clientWidth || 320;
+  pvBox.style.setProperty('--pv-scale', (w / 800).toFixed(3));
+}
+window.addEventListener('resize', pvScaleFit);
+function initLayoutPreview() {
+  if (!pvFrame) return;
+  const base = `${location.protocol}//${location.hostname || 'localhost'}:80/?preview=1`;
+  pvFrame.src = base + '&_t=' + Date.now(); // 时间戳防缓存
+  pvScaleFit();
+}
+function syncLayoutPreview() {
+  if (!pvFrame || pvSyncing) return;
+  const lay = draft.layout || collectLayout();
+  try { pvFrame.contentWindow?.postMessage({ type: 'preview-sync', layout: lay }, '*'); } catch { /* 未就绪忽略 */ }
+}
+window.addEventListener('message', (e) => {
+  const d = e.data;
+  if (!d || typeof d !== 'object' || d.type !== 'preview-layout') return;
+  if (e.source !== pvFrame?.contentWindow) return;
+  // 预览拖拽/缩放 → 更新滑条 + 草稿（不反向同步，避免循环）
+  pvSyncing = true;
+  const lay = d.layout || {};
+  ['time','date','weather','bubble','model'].forEach(m => {
+    const v = lay[m] || {x:0, y:0, scale:1};
+    ['x','y'].forEach(a => {
+      const val = v[a] || 0;
+      const sl = $('lay-' + m + '-' + a), num = $('lay-' + m + '-' + a + 'n'), tx = $('lay-' + m + '-' + a + 'v');
+      if (sl) sl.value = val; if (num) num.value = val; if (tx) tx.textContent = val;
+    });
+    const sl = $('lay-' + m + '-s'), num = $('lay-' + m + '-sn'), tx = $('lay-' + m + '-sv');
+    const s = (v.scale || 1);
+    if (sl) sl.value = s; if (num) num.value = s; if (tx) tx.textContent = Number(s).toFixed(2);
+  });
+  draft.layout = JSON.parse(JSON.stringify(lay));
+  markDirty('layout');
+  pvSyncing = false;
+});
+// iframe 加载完成后隐藏 loading
+pvFrame?.addEventListener('load', () => pvBox?.classList.add('loaded'));
+initLayoutPreview();
 
 $('file').addEventListener('change', () => {
   const f = $('file').files[0];
