@@ -263,7 +263,6 @@
           <select id="sel-bt" style="width:100%;margin:8px 0"></select>
           <button class="btn btn-primary" id="btn-bt-connect" style="padding:6px 12px;font-size:12px">连接</button>
         </div>
-        <button class="btn btn-primary btn-save" data-card="src" style="margin-top:12px">保存设置</button>
       </div>
     </div>
 
@@ -486,7 +485,6 @@ async function saveCard(card, fields) {
   if (card === 'layout') syncLayoutPreview();
 }
 const SAVE_FIELDS = {
-  src: ['netSources'],
   display: ['showTime','showDate','showWeather','showBubble','bubblePlaceholder','bubbleScrollSpeed','bubbleHold','bubbleFontSize','fontColors','bubbleBgColor','bgTheme','fontStyles','city','weatherUnit','weatherProvider','weatherKey'],
   layout: ['layout'],
   agent: ['astrbotUrl','astrbotKey','astrbotSession'],
@@ -1002,7 +1000,6 @@ async function saveNetSourcesLive() {
 ['sw-wifi','sw-usb'].forEach(id => {
   $(id).addEventListener('change', async (e) => {
     const wifiOn = $('sw-wifi').checked;
-    markDirty('src');
     if (id === 'sw-wifi') {
       if (wifiOn) {
         toast('WiFi 已开启，正在扫描…');
